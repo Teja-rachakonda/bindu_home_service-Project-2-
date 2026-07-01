@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="440" viewBox="0 0 800 440" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="0%" r="120%">
+      <stop offset="0%" stop-color="#0f8a6c"/>
+      <stop offset="55%" stop-color="#0d6e56"/>
+      <stop offset="100%" stop-color="#083d30"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="440" fill="url(#g)"/>
+  <text x="400" y="80" text-anchor="middle" fill="#a7f3d0" font-size="26" font-weight="700" letter-spacing="4">TALK MORE, PAY LESS</text>
+  <text x="400" y="180" text-anchor="middle" fill="#ffffff" font-size="64" font-weight="900">Home Phone</text>
+  <text x="400" y="270" text-anchor="middle" fill="#fde047" font-size="90" font-weight="900">from $15/mo</text>
+  <text x="400" y="360" text-anchor="middle" fill="#a7f3d0" font-size="26" font-weight="600">Unlimited Canada-wide  •  No Contract  •  Voicemail</text>
+</svg>

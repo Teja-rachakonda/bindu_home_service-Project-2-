@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="440" viewBox="0 0 800 440" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="0%" r="120%">
+      <stop offset="0%" stop-color="#e11d48"/>
+      <stop offset="55%" stop-color="#9f1239"/>
+      <stop offset="100%" stop-color="#4c0519"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="440" fill="url(#g)"/>
+  <text x="400" y="70" text-anchor="middle" fill="#fecdd3" font-size="26" font-weight="700" letter-spacing="4">LIMITED TIME OFFER</text>
+  <text x="400" y="110" text-anchor="middle" fill="#ffffff" font-size="34" font-weight="800">SPECIAL MEGA OFFER</text>
+  <text x="400" y="210" text-anchor="middle" fill="#fde047" font-size="120" font-weight="900">1.5 GBPS</text>
+  <text x="400" y="270" text-anchor="middle" fill="#ffffff" font-size="46" font-weight="800">for $48.00 / month</text>
+  <rect x="230" y="300" width="340" height="52" rx="10" fill="#fbbf24"/>
+  <text x="400" y="336" text-anchor="middle" fill="#431407" font-size="28" font-weight="900">$600 CASHBACK INCLUDED</text>
+  <text x="400" y="400" text-anchor="middle" fill="#fecdd3" font-size="22" font-weight="600">Free Modem  •  Free Activation  •  Unlimited Usage</text>
+</svg>

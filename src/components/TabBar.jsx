@@ -1,15 +1,15 @@
-import { tabs } from "../data/deals";
-
-function TabBar({ activeTab, onChange }) {
+// CHANGE 3 — tabs are driven by the `categories` list; App passes only the
+// active ones, so hiding a tab is just `active: false` in deals.js.
+function TabBar({ categories, activeId, onChange }) {
   return (
     <nav className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 py-1">
-      {tabs.map((tab) => {
-        const isActive = tab.id === activeTab;
+      {categories.map((cat) => {
+        const isActive = cat.id === activeId;
         return (
           <button
-            key={tab.id}
+            key={cat.id}
             type="button"
-            onClick={() => onChange(tab.id)}
+            onClick={() => onChange(cat.id)}
             className={[
               "whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200",
               isActive
@@ -17,7 +17,7 @@ function TabBar({ activeTab, onChange }) {
                 : "bg-white text-gray-600 hover:bg-gray-100",
             ].join(" ")}
           >
-            {tab.label}
+            {cat.name}
           </button>
         );
       })}

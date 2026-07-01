@@ -7,10 +7,11 @@ const badgeStyles = {
   New: "bg-sky-100 text-sky-700",
 };
 
-function DealCard({ deal }) {
+function DealCard({ deal, categoryName }) {
   const handleGetDeal = () => {
+    const from = categoryName ? ` (${categoryName})` : "";
     openWhatsApp(
-      `Hi! I am interested in the ${deal.name} plan at ${deal.price}. Can you help me?`
+      `Hi! I am interested in the ${deal.name} plan at ${deal.price}${from}. Can you help me?`
     );
   };
 
@@ -32,7 +33,7 @@ function DealCard({ deal }) {
             )}
           </div>
           <p className="mt-0.5 text-sm text-gray-500">{deal.details}</p>
-          <p className="mt-1 text-sm text-gray-400">{deal.tagline}</p>
+          <p className="mt-1 text-sm text-gray-400">{deal.tag}</p>
         </div>
 
         <div className="shrink-0 text-right">

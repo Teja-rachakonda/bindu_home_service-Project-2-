@@ -14,6 +14,7 @@ function WhatsAppIcon({ className }) {
   );
 }
 
+// CHANGE 5 — more prominent chat button with an "Online Now" status.
 function WhatsAppButton() {
   const handleChat = () => {
     openWhatsApp("Hi! I saw your offer and I would like to know more.");
@@ -23,16 +24,25 @@ function WhatsAppButton() {
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50">
       <div className="mx-auto w-full max-w-[420px] px-4 pb-4 pt-2">
         <div className="pointer-events-auto rounded-2xl bg-gradient-to-t from-page via-page/95 to-transparent">
+          {/* Online status row */}
+          <div className="mb-1.5 flex items-center justify-center gap-1.5">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-blink absolute inline-flex h-full w-full rounded-full bg-green-500" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500" />
+            </span>
+            <span className="text-xs font-semibold text-gray-700">Online Now</span>
+          </div>
+
           <button
             type="button"
             onClick={handleChat}
-            className="animate-pulse-glow flex w-full items-center justify-center gap-2 rounded-2xl bg-whatsapp py-3.5 text-base font-bold text-white transition-transform active:scale-[0.99]"
+            className="animate-pulse-glow flex w-full items-center justify-center gap-2 rounded-2xl bg-whatsapp py-4 text-lg font-extrabold text-white shadow-lg transition-transform active:scale-[0.99]"
           >
-            <WhatsAppIcon className="h-6 w-6" />
+            <WhatsAppIcon className="h-7 w-7" />
             <span>💬 Chat with Agent</span>
           </button>
           <p className="mt-1.5 text-center text-xs text-gray-500">
-            Opens WhatsApp instantly — no sign up needed
+            Usually replies in 2 minutes
           </p>
         </div>
       </div>
