@@ -22,7 +22,7 @@ function WhatsAppButton() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50">
-      <div className="mx-auto w-full max-w-[420px] px-4 pb-4 pt-2">
+      <div className="mx-auto w-full max-w-[420px] px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         <div className="pointer-events-auto rounded-2xl bg-gradient-to-t from-page via-page/95 to-transparent">
           {/* Online status row */}
           <div className="mb-1.5 flex items-center justify-center gap-1.5">
