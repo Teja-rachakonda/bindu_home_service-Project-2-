@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { openWhatsApp } from "../utils/whatsapp";
 
 // Badge colour mapping. Unknown / empty badges render nothing.
@@ -7,13 +8,56 @@ const badgeStyles = {
   New: "bg-sky-100 text-sky-700",
 };
 
+// Circular icons matching the adaptive-card Approve/Decline style.
+function CheckCircle({ className }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path
+        fillRule="evenodd"
+        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6 7.7 9.3a1 1 0 00-1.4 1.4l2 2a1 1 0 001.4 0l4-4z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+function XCircle({ className }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path
+        fillRule="evenodd"
+        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.7 7.3a1 1 0 00-1.4 1.4L8.6 10l-1.3 1.3a1 1 0 101.4 1.4L10 11.4l1.3 1.3a1 1 0 001.4-1.4L11.4 10l1.3-1.3a1 1 0 00-1.4-1.4L10 8.6 8.7 7.3z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
 function DealCard({ deal, categoryName }) {
-  const handleGetDeal = () => {
+  const [declined, setDeclined] = useState(false);
+
+  const handleInterested = () => {
     const from = categoryName ? ` (${categoryName})` : "";
     openWhatsApp(
       `Hi! I am interested in the ${deal.name} plan at ${deal.price}${from}. Can you help me?`
     );
   };
+
+  // Declined ("Not now") — collapse the card into a small dismissible row.
+  if (declined) {
+    return (
+      <div className="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-3 text-sm text-gray-500 ring-1 ring-gray-100">
+        <span>No problem — maybe later 👍</span>
+        <button
+          type="button"
+          onClick={() => setDeclined(false)}
+          className="font-semibold text-brand hover:underline"
+        >
+          Undo
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100 transition-shadow hover:shadow-md">
@@ -41,13 +85,25 @@ function DealCard({ deal, categoryName }) {
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={handleGetDeal}
-        className="mt-3 w-full rounded-xl bg-brand py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-dark active:scale-[0.99]"
-      >
-        Get Deal
-      </button>
+      {/* Adaptive-card style choice: Interested / Not now */}
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={handleInterested}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-brand py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-dark active:scale-[0.99]"
+        >
+          <CheckCircle className="h-4 w-4" />
+          Interested
+        </button>
+        <button
+          type="button"
+          onClick={() => setDeclined(true)}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-600 active:scale-[0.99]"
+        >
+          <XCircle className="h-4 w-4" />
+          Not now
+        </button>
+      </div>
     </div>
   );
 }
