@@ -1,4 +1,5 @@
 import { openWhatsApp } from "../utils/whatsapp";
+import { Storage } from "../utils/storage";
 
 // Inline WhatsApp glyph so we don't depend on an icon library.
 function WhatsAppIcon({ className }) {
@@ -15,9 +16,16 @@ function WhatsAppIcon({ className }) {
 }
 
 // CHANGE 5 — more prominent chat button with an "Online Now" status.
-function WhatsAppButton() {
+// `label`, `phone` and `callText` come from the admin Brand/Config settings.
+function WhatsAppButton({ label, phone, callText }) {
   const handleChat = () => {
+    Storage.addLead({ dealName: "General enquiry", tab: "", action: "Chat with Agent" });
     openWhatsApp("Hi! I saw your offer and I would like to know more.");
+  };
+
+  const handleCall = () => {
+    Storage.addLead({ dealName: "Call request", tab: "", action: "Call" });
+    window.location.href = `tel:${phone.replace(/[^\d+]/g, "")}`;
   };
 
   return (
@@ -39,8 +47,20 @@ function WhatsAppButton() {
             className="animate-pulse-glow flex w-full items-center justify-center gap-2 rounded-2xl bg-whatsapp py-4 text-lg font-extrabold text-white shadow-lg transition-transform active:scale-[0.99]"
           >
             <WhatsAppIcon className="h-7 w-7" />
-            <span>💬 Chat with Agent</span>
+            <span>{label || "💬 Chat with Agent"}</span>
           </button>
+
+          {/* Optional call button — only when a phone number is configured */}
+          {phone && (
+            <button
+              type="button"
+              onClick={handleCall}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-brand py-3 text-base font-bold text-white transition-transform active:scale-[0.99]"
+            >
+              {callText || "📞 Call Us Now"}
+            </button>
+          )}
+
           <p className="mt-1.5 text-center text-xs text-gray-500">
             Usually replies in 2 minutes
           </p>

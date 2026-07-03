@@ -1,17 +1,28 @@
-function Header() {
+// Header text/logo can be overridden by the admin Brand settings; when unset
+// it falls back to the original Bindu defaults so nothing changes by default.
+function Header({ brand = {} }) {
+  const title = brand.header1 || "Bindu Home Services";
+  const subtitle = brand.header2 || "Canada's Best Home Deals";
+  const logo = brand.logo || "🏠";
+  const logoIsImage =
+    typeof logo === "string" &&
+    (logo.startsWith("data:") || logo.startsWith("http") || logo.startsWith("/"));
+
   return (
     <header className="bg-brand text-white rounded-b-2xl px-5 pt-6 pb-4 shadow-md">
       <div className="flex items-center gap-3">
-        {/* House logo */}
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-2xl">
-          🏠
+        {/* Logo (emoji/text, or uploaded image) */}
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/15 text-2xl">
+          {logoIsImage ? (
+            <img src={logo} alt="logo" className="h-full w-full object-cover" />
+          ) : (
+            logo
+          )}
         </div>
 
         <div className="min-w-0 flex-1">
-          <h1 className="text-lg font-bold leading-tight">Bindu Home Services</h1>
-          <p className="text-sm text-white/80 leading-tight">
-            Canada's Best Home Deals
-          </p>
+          <h1 className="text-lg font-bold leading-tight">{title}</h1>
+          <p className="text-sm text-white/80 leading-tight">{subtitle}</p>
         </div>
 
         {/* Live offers indicator */}
