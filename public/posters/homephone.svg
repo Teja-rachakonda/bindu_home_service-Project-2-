@@ -7,8 +7,8 @@
     </radialGradient>
   </defs>
   <rect width="800" height="440" fill="url(#g)"/>
-  <text x="400" y="80" text-anchor="middle" fill="#a7f3d0" font-size="26" font-weight="700" letter-spacing="4">TALK MORE, PAY LESS</text>
-  <text x="400" y="180" text-anchor="middle" fill="#ffffff" font-size="64" font-weight="900">Home Phone</text>
-  <text x="400" y="270" text-anchor="middle" fill="#fde047" font-size="90" font-weight="900">from $15/mo</text>
-  <text x="400" y="360" text-anchor="middle" fill="#a7f3d0" font-size="26" font-weight="600">Unlimited Canada-wide  •  No Contract  •  Voicemail</text>
+  <text x="400" y="66" text-anchor="middle" fill="#a7f3d0" font-size="24" font-weight="700" letter-spacing="5">BINDU HOME SERVICES</text>
+  <text x="400" y="150" text-anchor="middle" fill="#ffffff" font-size="48" font-weight="900">Home Phone</text>
+  <text x="400" y="262" text-anchor="middle" fill="#fde047" font-size="96" font-weight="900">from $15/mo</text>
+  <text x="400" y="352" text-anchor="middle" fill="#a7f3d0" font-size="24" font-weight="600">Unlimited Canada-wide  •  No Contract  •  Voicemail</text>
 </svg>

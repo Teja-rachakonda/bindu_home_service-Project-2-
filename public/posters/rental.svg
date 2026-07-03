@@ -7,9 +7,10 @@
     </radialGradient>
   </defs>
   <rect width="800" height="440" fill="url(#g)"/>
-  <rect x="60" y="60" width="300" height="46" rx="8" fill="#fbbf24"/>
-  <text x="210" y="92" text-anchor="middle" fill="#431407" font-size="24" font-weight="800">BRAND NEW TOWN HOMES</text>
-  <text x="400" y="200" text-anchor="middle" fill="#ffffff" font-size="72" font-weight="900">Move-in Ready</text>
-  <text x="400" y="270" text-anchor="middle" fill="#fde047" font-size="44" font-weight="800">Homes &amp; Apartments</text>
-  <text x="400" y="360" text-anchor="middle" fill="#cbd5e1" font-size="26" font-weight="600">Downtown &amp; Suburbs  •  Pet Friendly  •  Flexible Lease</text>
+  <text x="400" y="60" text-anchor="middle" fill="#94a3b8" font-size="24" font-weight="700" letter-spacing="5">BINDU HOME SERVICES</text>
+  <rect x="250" y="86" width="300" height="42" rx="8" fill="#fbbf24"/>
+  <text x="400" y="116" text-anchor="middle" fill="#431407" font-size="22" font-weight="800">RENTAL LISTINGS</text>
+  <text x="400" y="210" text-anchor="middle" fill="#ffffff" font-size="64" font-weight="900">Move-in Ready</text>
+  <text x="400" y="278" text-anchor="middle" fill="#fde047" font-size="42" font-weight="800">Homes &amp; Apartments</text>
+  <text x="400" y="366" text-anchor="middle" fill="#cbd5e1" font-size="24" font-weight="600">Downtown &amp; Suburbs  •  Pet Friendly  •  Flexible Lease</text>
 </svg>

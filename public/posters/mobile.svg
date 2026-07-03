@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="800" height="440" viewBox="0 0 800 440" font-family="Segoe UI, Arial, sans-serif">
   <defs>
     <radialGradient id="g" cx="50%" cy="0%" r="120%">
-      <stop offset="0%" stop-color="#b45309"/>
-      <stop offset="55%" stop-color="#7c2d12"/>
-      <stop offset="100%" stop-color="#431407"/>
+      <stop offset="0%" stop-color="#0f8a6c"/>
+      <stop offset="55%" stop-color="#0d6e56"/>
+      <stop offset="100%" stop-color="#083d30"/>
     </radialGradient>
   </defs>
   <rect width="800" height="440" fill="url(#g)"/>
-  <text x="400" y="80" text-anchor="middle" fill="#fed7aa" font-size="26" font-weight="700" letter-spacing="4">SPECIAL MEGA OFFER</text>
-  <text x="400" y="180" text-anchor="middle" fill="#ffffff" font-size="66" font-weight="900">Unlimited Mobile</text>
-  <text x="400" y="280" text-anchor="middle" fill="#fde047" font-size="96" font-weight="900">$40/mo</text>
-  <text x="400" y="360" text-anchor="middle" fill="#fed7aa" font-size="26" font-weight="600">5G Ready  •  Canada-wide  •  USA Roaming</text>
+  <text x="400" y="66" text-anchor="middle" fill="#a7f3d0" font-size="24" font-weight="700" letter-spacing="5">BINDU HOME SERVICES</text>
+  <text x="400" y="150" text-anchor="middle" fill="#ffffff" font-size="46" font-weight="900">Mobile Plans</text>
+  <text x="400" y="262" text-anchor="middle" fill="#fde047" font-size="96" font-weight="900">from $25/mo</text>
+  <text x="400" y="352" text-anchor="middle" fill="#a7f3d0" font-size="24" font-weight="600">Canada-wide Talk &amp; Text  •  Flexible Data  •  Easy Switch</text>
 </svg>
