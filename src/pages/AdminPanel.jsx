@@ -75,7 +75,14 @@ function Loading() {
   return <p className="py-10 text-center text-sm text-gray-400">Loading…</p>;
 }
 
-const ALL_TABS = ["Brand", "Posters", "Templates", "Published", "Config", "Leads"];
+const ALL_TABS = ["Brand", "Posters", "Offers", "Templates", "Published", "Config", "Leads"];
+
+const OFFER_CATEGORIES = [
+  { id: "internet", label: "Internet Deals" },
+  { id: "rental", label: "Rental" },
+  { id: "homePhone", label: "Home Phone" },
+  { id: "mobile", label: "Mobile Plans" },
+];
 
 /* ─────────────────────────  Brand tab  ───────────────────────── */
 
@@ -303,6 +310,163 @@ function PostersTab({ toast }) {
                 {p.status === "active" ? "Unpublish" : "Publish"}
               </button>
               <button onClick={() => remove(p.id)} className="flex-1 rounded-md border border-red-300 py-1.5 text-red-600">Delete</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────  Offers tab (deal cards)  ───────────────────────── */
+
+const EMPTY_OFFER = {
+  category: "internet",
+  name: "",
+  details: "",
+  price: "",
+  tag: "",
+  badge: "",
+  active: true,
+  sortOrder: 0,
+};
+
+function OffersTab({ toast }) {
+  const [offers, setOffers] = useState(null);
+  const [cat, setCat] = useState("internet");
+  const [editing, setEditing] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const reload = () => db.getOffers().then(setOffers);
+  useEffect(() => {
+    reload();
+  }, []);
+
+  if (!offers) return <Loading />;
+  const list = offers.filter((o) => o.category === cat);
+
+  const openAdd = () => {
+    setEditing({ ...EMPTY_OFFER, category: cat, sortOrder: list.length + 1 });
+    setShowForm(true);
+  };
+  const openEdit = (o) => {
+    setEditing({ ...o });
+    setShowForm(true);
+  };
+  const save = async () => {
+    await db.saveOffer(editing);
+    await reload();
+    setShowForm(false);
+    setEditing(null);
+    toast("Offer saved!");
+  };
+  const remove = async (id) => {
+    await db.deleteOffer(id);
+    reload();
+  };
+  const toggleActive = async (o) => {
+    await db.saveOffer({ ...o, active: !o.active });
+    reload();
+  };
+  const set = (k) => (e) => setEditing({ ...editing, [k]: e.target.value });
+
+  if (showForm) {
+    return (
+      <div>
+        <div className="mb-4">
+          <Label>Category (tab)</Label>
+          <select
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 outline-none focus:border-[#f59e0b]"
+            value={editing.category}
+            onChange={set("category")}
+          >
+            {OFFER_CATEGORIES.map((c) => (
+              <option key={c.id} value={c.id}>{c.label}</option>
+            ))}
+          </select>
+        </div>
+        <Field label="Name" value={editing.name} onChange={set("name")} placeholder="Starter Internet" />
+        <Field label="Details" value={editing.details} onChange={set("details")} placeholder="25 Mbps" />
+        <Field label="Price" value={editing.price} onChange={set("price")} placeholder="$45/mo" />
+        <Field label="Tag (small line)" value={editing.tag} onChange={set("tag")} placeholder="Best for 1-2 users" />
+        <Field label="Badge" value={editing.badge} onChange={set("badge")} placeholder="Popular / Best Value / New" />
+        <Field label="Sort order" type="number" value={editing.sortOrder} onChange={(e) => setEditing({ ...editing, sortOrder: Number(e.target.value) })} />
+
+        <div className="mb-4 flex items-center gap-3">
+          <Label>Visible</Label>
+          <button
+            type="button"
+            onClick={() => setEditing({ ...editing, active: !editing.active })}
+            className={`rounded-full px-4 py-1.5 text-sm font-bold ${
+              editing.active ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
+            }`}
+          >
+            {editing.active ? "Shown" : "Hidden"}
+          </button>
+        </div>
+
+        <div className="flex gap-2">
+          <BlackButton onClick={save}>💾 Save</BlackButton>
+          <button
+            onClick={() => {
+              setShowForm(false);
+              setEditing(null);
+            }}
+            className="w-full rounded-md border border-gray-300 bg-white py-3 font-bold text-gray-600"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Category selector */}
+      <div className="no-scrollbar mb-4 flex gap-2 overflow-x-auto">
+        {OFFER_CATEGORIES.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => setCat(c.id)}
+            className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold ${
+              cat === c.id ? "bg-[#111] text-[#f59e0b]" : "bg-gray-100 text-gray-600"
+            }`}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      <BlackButton onClick={openAdd} className="mb-4">＋ Add Offer</BlackButton>
+
+      {list.length === 0 && (
+        <p className="py-8 text-center text-sm text-gray-400">No offers in this tab yet.</p>
+      )}
+
+      <div className="flex flex-col gap-3">
+        {list.map((o) => (
+          <div key={o.id} className="rounded-xl border border-gray-200 p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-bold text-gray-900">
+                  {o.name} <span className="font-extrabold text-[#b45309]">{o.price}</span>
+                </p>
+                <p className="text-sm text-gray-500">{o.details}</p>
+                <p className="text-xs text-gray-400">{o.tag}{o.badge ? ` • ${o.badge}` : ""}</p>
+              </div>
+              <button
+                onClick={() => toggleActive(o)}
+                className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${
+                  o.active ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                {o.active ? "Shown" : "Hidden"}
+              </button>
+            </div>
+            <div className="mt-3 flex gap-2 text-sm font-semibold">
+              <button onClick={() => openEdit(o)} className="flex-1 rounded-md border border-gray-300 py-1.5 text-gray-700">Edit</button>
+              <button onClick={() => remove(o.id)} className="flex-1 rounded-md border border-red-300 py-1.5 text-red-600">Delete</button>
             </div>
           </div>
         ))}
@@ -832,6 +996,7 @@ function AdminPanel() {
         <div className="flex-1 overflow-y-auto px-4 py-5">
           {tab === "Brand" && <BrandTab toast={toast} />}
           {tab === "Posters" && <PostersTab toast={toast} />}
+          {tab === "Offers" && <OffersTab toast={toast} />}
           {tab === "Templates" && <TemplatesTab toast={toast} goToPosters={() => setTab("Posters")} />}
           {tab === "Published" && <PublishedTab toast={toast} />}
           {tab === "Config" && <ConfigTab toast={toast} />}

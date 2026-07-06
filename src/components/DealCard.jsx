@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { openWhatsApp } from "../utils/whatsapp";
-import { addLead } from "../lib/db";
 
 // Badge colour mapping. Unknown / empty badges render nothing.
 const badgeStyles = {
@@ -34,19 +32,17 @@ function XCircle({ className }) {
   );
 }
 
-function DealCard({ deal, categoryName }) {
+function DealCard({ deal, categoryName, onRequestLead }) {
   const [declined, setDeclined] = useState(false);
 
   const handleInterested = () => {
     const from = categoryName ? ` (${categoryName})` : "";
-    addLead({
+    onRequestLead({
       dealName: deal.name,
       tab: categoryName || "",
       action: "Interested",
+      waMessage: `Hi! I am interested in the ${deal.name} plan at ${deal.price}${from}. Can you help me?`,
     });
-    openWhatsApp(
-      `Hi! I am interested in the ${deal.name} plan at ${deal.price}${from}. Can you help me?`
-    );
   };
 
   // Declined ("Not now") — collapse the card into a small dismissible row.

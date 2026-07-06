@@ -1,20 +1,15 @@
-import { openWhatsApp } from "../utils/whatsapp";
-import { addLead } from "../lib/db";
-
-// Renders admin-created posters as framed, clickable cards. No visible link:
-// tapping silently opens WhatsApp with the poster's pre-filled message and
-// records a lead.
-function AdminPosters({ posters }) {
+// Renders admin-created posters as framed, clickable cards. Tapping opens the
+// "Click Here → share your details" lead-capture modal (no visible link).
+function AdminPosters({ posters, onRequestLead }) {
   const handleClick = (poster) => {
-    addLead({
+    onRequestLead({
       dealName: poster.title || "Poster",
       tab: "Poster",
       action: "Poster tap",
+      waMessage:
+        poster.waMessage ||
+        `Hi! I saw your "${poster.title}" offer and want to know more.`,
     });
-    openWhatsApp(
-      poster.waMessage ||
-        `Hi! I saw your "${poster.title}" offer and want to know more.`
-    );
   };
 
   return (
@@ -43,6 +38,11 @@ function AdminPosters({ posters }) {
               {poster.badge}
             </span>
           )}
+
+          {/* "Click Here" highlight so people know to tap */}
+          <span className="absolute bottom-3 right-3 rounded-full bg-whatsapp px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+            👉 Click Here
+          </span>
 
           {(poster.title || poster.description) && (
             <div className="bg-white px-4 py-3 text-left">

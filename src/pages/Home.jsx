@@ -7,6 +7,7 @@ import PosterStrip from "../components/PosterStrip";
 import DealCard from "../components/DealCard";
 import WhatsAppButton from "../components/WhatsAppButton";
 import AdminPosters from "../components/AdminPosters";
+import LeadModal from "../components/LeadModal";
 import { categories } from "../data/deals";
 import * as db from "../lib/db";
 
@@ -21,6 +22,7 @@ function Home() {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState(null);
+  const [leadReq, setLeadReq] = useState(null); // "Click Here" lead-capture request
 
   useEffect(() => {
     let alive = true;
@@ -80,7 +82,7 @@ function Home() {
               {/* Admin-created posters (framed, clickable) at the very top */}
               {adminPosters.length > 0 && (
                 <div className="mb-4">
-                  <AdminPosters posters={adminPosters} />
+                  <AdminPosters posters={adminPosters} onRequestLead={setLeadReq} />
                 </div>
               )}
 
@@ -114,7 +116,12 @@ function Home() {
                 )}
 
                 {activeDeals.map((deal) => (
-                  <DealCard key={deal.id} deal={deal} categoryName={active?.name} />
+                  <DealCard
+                    key={deal.id}
+                    deal={deal}
+                    categoryName={active?.name}
+                    onRequestLead={setLeadReq}
+                  />
                 ))}
               </div>
             </>
@@ -126,7 +133,10 @@ function Home() {
         label={config.connectText}
         phone={brand.phone}
         callText={config.callText}
+        onRequestLead={setLeadReq}
       />
+
+      <LeadModal req={leadReq} onClose={() => setLeadReq(null)} />
     </div>
   );
 }

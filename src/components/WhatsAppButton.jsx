@@ -1,4 +1,3 @@
-import { openWhatsApp } from "../utils/whatsapp";
 import { addLead } from "../lib/db";
 
 // Inline WhatsApp glyph so we don't depend on an icon library.
@@ -17,10 +16,14 @@ function WhatsAppIcon({ className }) {
 
 // CHANGE 5 — more prominent chat button with an "Online Now" status.
 // `label`, `phone` and `callText` come from the admin Brand/Config settings.
-function WhatsAppButton({ label, phone, callText }) {
+function WhatsAppButton({ label, phone, callText, onRequestLead }) {
   const handleChat = () => {
-    addLead({ dealName: "General enquiry", tab: "", action: "Chat with Agent" });
-    openWhatsApp("Hi! I saw your offer and I would like to know more.");
+    onRequestLead({
+      dealName: "General enquiry",
+      tab: "",
+      action: "Chat with Agent",
+      waMessage: "Hi! I saw your offer and I would like to know more.",
+    });
   };
 
   const handleCall = () => {
