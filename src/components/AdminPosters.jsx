@@ -1,12 +1,12 @@
 import { openWhatsApp } from "../utils/whatsapp";
-import { Storage } from "../utils/storage";
+import { addLead } from "../lib/db";
 
 // Renders admin-created posters as framed, clickable cards. No visible link:
 // tapping silently opens WhatsApp with the poster's pre-filled message and
 // records a lead.
 function AdminPosters({ posters }) {
   const handleClick = (poster) => {
-    Storage.addLead({
+    addLead({
       dealName: poster.title || "Poster",
       tab: "Poster",
       action: "Poster tap",

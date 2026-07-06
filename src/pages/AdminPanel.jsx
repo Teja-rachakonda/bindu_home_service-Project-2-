@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Storage, downloadJSON } from "../utils/storage";
+import * as db from "../lib/db";
 
 /* ─────────────────────────  shared UI  ───────────────────────── */
 
@@ -27,7 +28,7 @@ function Field({ label, ...props }) {
 function BlackButton({ children, className = "", ...props }) {
   return (
     <button
-      className={`w-full rounded-md border border-[#f59e0b] bg-[#111] py-3 font-bold text-[#f59e0b] transition-colors hover:bg-black active:scale-[0.99] ${className}`}
+      className={`w-full rounded-md border border-[#f59e0b] bg-[#111] py-3 font-bold text-[#f59e0b] transition-colors hover:bg-black active:scale-[0.99] disabled:opacity-50 ${className}`}
       {...props}
     >
       {children}
@@ -70,21 +71,32 @@ function WarningBox({ children }) {
   );
 }
 
+function Loading() {
+  return <p className="py-10 text-center text-sm text-gray-400">Loading…</p>;
+}
+
 const ALL_TABS = ["Brand", "Posters", "Templates", "Published", "Config", "Leads"];
 
 /* ─────────────────────────  Brand tab  ───────────────────────── */
 
 function BrandTab({ toast }) {
-  const [form, setForm] = useState(() => ({
-    header1: "DEALS ALERT",
-    header2: "Live Offers This Week",
-    logo: "🚨",
-    footerTop: "",
-    footerBottom: "",
-    phone: "+1 647-740-8124",
-    ...Storage.getBrand(),
-  }));
+  const [form, setForm] = useState(null);
 
+  useEffect(() => {
+    db.getBrand().then((b) =>
+      setForm({
+        header1: "DEALS ALERT",
+        header2: "Live Offers This Week",
+        logo: "🚨",
+        footerTop: "",
+        footerBottom: "",
+        phone: "+1 647-740-8124",
+        ...b,
+      })
+    );
+  }, []);
+
+  if (!form) return <Loading />;
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   const handleUpload = (e) => {
@@ -95,8 +107,8 @@ function BrandTab({ toast }) {
     reader.readAsDataURL(file);
   };
 
-  const save = () => {
-    Storage.saveBrand(form);
+  const save = async () => {
+    await db.saveBrand(form);
     toast("Brand settings saved!");
   };
 
@@ -140,20 +152,23 @@ const EMPTY_POSTER = {
   waMessage: "",
   badge: "",
   status: "draft",
+  knowledgeBase: "",
 };
 
 function PostersTab({ toast }) {
-  const [posters, setPosters] = useState(() => Storage.getPosters());
-  const [editing, setEditing] = useState(null); // poster object or null
+  const [posters, setPosters] = useState(null);
+  const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
-  const persist = (next) => {
-    setPosters(next);
-    Storage.savePosters(next);
-  };
+  const reload = () => db.getPosters().then(setPosters);
+  useEffect(() => {
+    reload();
+  }, []);
+
+  if (!posters) return <Loading />;
 
   const openAdd = () => {
-    setEditing({ ...EMPTY_POSTER, id: Date.now() });
+    setEditing({ ...EMPTY_POSTER });
     setShowForm(true);
   };
   const openEdit = (p) => {
@@ -161,27 +176,23 @@ function PostersTab({ toast }) {
     setShowForm(true);
   };
 
-  const save = () => {
-    const exists = posters.some((p) => p.id === editing.id);
-    const next = exists
-      ? posters.map((p) => (p.id === editing.id ? editing : p))
-      : [editing, ...posters];
-    persist(next);
+  const save = async () => {
+    await db.savePoster(editing);
+    await reload();
     setShowForm(false);
     setEditing(null);
     toast("Poster saved!");
   };
-
-  const remove = (id) => persist(posters.filter((p) => p.id !== id));
-  const publish = (id) =>
-    persist(
-      posters.map((p) =>
-        p.id === id ? { ...p, status: p.status === "active" ? "draft" : "active" } : p
-      )
-    );
+  const remove = async (id) => {
+    await db.deletePoster(id);
+    reload();
+  };
+  const publish = async (p) => {
+    await db.savePoster({ ...p, status: p.status === "active" ? "draft" : "active" });
+    reload();
+  };
 
   const set = (k) => (e) => setEditing({ ...editing, [k]: e.target.value });
-
   const handleUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -216,17 +227,24 @@ function PostersTab({ toast }) {
         <Field label="WhatsApp message" value={editing.waMessage} onChange={set("waMessage")} placeholder="Hi! I saw your offer…" />
         <Field label="Badge text" value={editing.badge} onChange={set("badge")} placeholder="HOT DEAL 🔥" />
 
+        <div className="mb-4">
+          <Label>Knowledge base (for the chat / bot)</Label>
+          <textarea
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 outline-none focus:border-[#f59e0b]"
+            rows={3}
+            value={editing.knowledgeBase}
+            onChange={set("knowledgeBase")}
+            placeholder="Details the agent/bot should know about this offer…"
+          />
+        </div>
+
         <div className="mb-4 flex items-center gap-3">
           <Label>Status</Label>
           <button
             type="button"
-            onClick={() =>
-              setEditing({ ...editing, status: editing.status === "active" ? "draft" : "active" })
-            }
+            onClick={() => setEditing({ ...editing, status: editing.status === "active" ? "draft" : "active" })}
             className={`rounded-full px-4 py-1.5 text-sm font-bold ${
-              editing.status === "active"
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-gray-100 text-gray-500"
+              editing.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
             }`}
           >
             {editing.status === "active" ? "Active" : "Draft"}
@@ -256,9 +274,7 @@ function PostersTab({ toast }) {
       </BlackButton>
 
       {posters.length === 0 && (
-        <p className="py-8 text-center text-sm text-gray-400">
-          No posters yet. Add your first one!
-        </p>
+        <p className="py-8 text-center text-sm text-gray-400">No posters yet. Add your first one!</p>
       )}
 
       <div className="flex flex-col gap-3">
@@ -274,9 +290,7 @@ function PostersTab({ toast }) {
                 <p className="truncate font-bold text-gray-900">{p.title || "Untitled"}</p>
                 <span
                   className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
-                    p.status === "active"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "bg-gray-100 text-gray-500"
+                    p.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
                   }`}
                 >
                   {p.status === "active" ? "Active" : "Draft"}
@@ -285,7 +299,7 @@ function PostersTab({ toast }) {
             </div>
             <div className="mt-3 flex gap-2 text-sm font-semibold">
               <button onClick={() => openEdit(p)} className="flex-1 rounded-md border border-gray-300 py-1.5 text-gray-700">Edit</button>
-              <button onClick={() => publish(p.id)} className="flex-1 rounded-md border border-[#f59e0b] py-1.5 text-[#b45309]">
+              <button onClick={() => publish(p)} className="flex-1 rounded-md border border-[#f59e0b] py-1.5 text-[#b45309]">
                 {p.status === "active" ? "Unpublish" : "Publish"}
               </button>
               <button onClick={() => remove(p.id)} className="flex-1 rounded-md border border-red-300 py-1.5 text-red-600">Delete</button>
@@ -339,12 +353,8 @@ const TEMPLATES = [
 ];
 
 function TemplatesTab({ goToPosters, toast }) {
-  const use = (tpl) => {
-    const posters = Storage.getPosters();
-    Storage.savePosters([
-      { ...tpl.poster, id: Date.now(), status: "draft" },
-      ...posters,
-    ]);
+  const use = async (tpl) => {
+    await db.savePoster({ ...tpl.poster, status: "draft", knowledgeBase: "" });
     toast(`"${tpl.name}" added to Posters as a draft`);
     goToPosters();
   };
@@ -374,15 +384,19 @@ function TemplatesTab({ goToPosters, toast }) {
 /* ─────────────────────────  Published tab  ───────────────────────── */
 
 function PublishedTab({ toast }) {
-  const [posters, setPosters] = useState(() => Storage.getPosters());
+  const [posters, setPosters] = useState(null);
+  const reload = () => db.getPosters().then(setPosters);
+  useEffect(() => {
+    reload();
+  }, []);
+
+  if (!posters) return <Loading />;
   const published = posters.filter((p) => p.status === "active");
 
-  const unpublish = (id) => {
-    const next = posters.map((p) => (p.id === id ? { ...p, status: "draft" } : p));
-    setPosters(next);
-    Storage.savePosters(next);
+  const unpublish = async (p) => {
+    await db.savePoster({ ...p, status: "draft" });
+    reload();
   };
-
   const shareLink = () => {
     const url = window.location.origin + "/";
     navigator.clipboard?.writeText(url);
@@ -406,7 +420,7 @@ function PublishedTab({ toast }) {
             <p className="font-bold text-gray-900">{p.title}</p>
             <div className="mt-2 flex gap-2 text-sm font-semibold">
               <button onClick={shareLink} className="flex-1 rounded-md border border-[#f59e0b] py-1.5 text-[#b45309]">🔗 Share Link</button>
-              <button onClick={() => unpublish(p.id)} className="flex-1 rounded-md border border-gray-300 py-1.5 text-gray-600">Unpublish</button>
+              <button onClick={() => unpublish(p)} className="flex-1 rounded-md border border-gray-300 py-1.5 text-gray-600">Unpublish</button>
             </div>
           </div>
         </div>
@@ -437,22 +451,25 @@ function Toggle({ on, onClick }) {
 }
 
 function ConfigTab({ toast }) {
-  const [form, setForm] = useState(() => {
-    const cfg = Storage.getConfig();
-    return {
-      waNumber: cfg.waNumber || "16477408124",
-      connectText: cfg.connectText || "💬 Connect with Agent",
-      callText: cfg.callText || "📞 Call Us Now",
-      tabs: { internet: true, rental: true, homePhone: true, mobile: true, ...cfg.tabs },
-    };
-  });
+  const [form, setForm] = useState(null);
 
+  useEffect(() => {
+    db.getConfig().then((cfg) =>
+      setForm({
+        waNumber: cfg.waNumber || "16477408124",
+        connectText: cfg.connectText || "💬 Connect with Agent",
+        callText: cfg.callText || "📞 Call Us Now",
+        tabs: { internet: true, rental: true, homePhone: true, mobile: true, ...cfg.tabs },
+      })
+    );
+  }, []);
+
+  if (!form) return <Loading />;
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
-  const toggleTab = (id) =>
-    setForm({ ...form, tabs: { ...form.tabs, [id]: !form.tabs[id] } });
+  const toggleTab = (id) => setForm({ ...form, tabs: { ...form.tabs, [id]: !form.tabs[id] } });
 
-  const save = () => {
-    Storage.saveConfig({ ...Storage.getConfig(), ...form });
+  const save = async () => {
+    await db.saveConfig(form);
     toast("Config saved!");
   };
 
@@ -480,18 +497,26 @@ function ConfigTab({ toast }) {
 /* ─────────────────────────  Leads tab  ───────────────────────── */
 
 function LeadsTab({ toast }) {
-  const [leads, setLeads] = useState(() => Storage.getLeads());
+  const [leads, setLeads] = useState(null);
+  const reload = () => db.getLeads().then(setLeads);
+  useEffect(() => {
+    reload();
+  }, []);
 
-  const clearAll = () => {
+  if (!leads) return <Loading />;
+
+  const clearAll = async () => {
     if (!confirm("Clear all leads? This cannot be undone.")) return;
-    Storage.clearLeads();
+    await db.clearLeads();
     setLeads([]);
     toast("All leads cleared");
   };
 
   const exportCSV = () => {
-    const rows = [["Time", "Deal", "Tab", "Action"]];
-    leads.forEach((l) => rows.push([l.time, l.dealName, l.tab, l.action]));
+    const rows = [["Time", "Deal", "Tab", "Action", "First", "Last", "Phone", "Email"]];
+    leads.forEach((l) =>
+      rows.push([l.createdAt, l.dealName, l.tab, l.action, l.firstName, l.lastName, l.phone, l.email])
+    );
     const csv = rows
       .map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(","))
       .join("\n");
@@ -530,7 +555,7 @@ function LeadsTab({ toast }) {
             <tbody>
               {leads.map((l) => (
                 <tr key={l.id} className="border-b border-gray-100">
-                  <td className="py-2 pr-2 text-gray-500">{l.time}</td>
+                  <td className="py-2 pr-2 text-gray-500">{new Date(l.createdAt).toLocaleString()}</td>
                   <td className="py-2 pr-2 font-medium text-gray-900">{l.dealName}</td>
                   <td className="py-2 pr-2 text-gray-600">{l.tab}</td>
                   <td className="py-2 text-gray-600">{l.action}</td>
@@ -546,36 +571,31 @@ function LeadsTab({ toast }) {
 
 /* ─────────────────────────  Super tab  ───────────────────────── */
 
-function storageMB() {
-  let total = 0;
-  ["bindu_brand", "bindu_posters", "bindu_leads", "bindu_config", "bindu_admin_users"].forEach((k) => {
-    const v = localStorage.getItem(k);
-    if (v) total += v.length + k.length;
-  });
-  return (total / (1024 * 1024)).toFixed(2);
-}
-
 function SuperTab({ toast }) {
   const [masterPw, setMasterPw] = useState("");
   const [securityAns, setSecurityAns] = useState(Storage.getSecurityAnswer());
   const [apiKey, setApiKey] = useState(Storage.getApiKey());
-
-  const cfg = Storage.getConfig();
-  const [saas, setSaas] = useState({
-    plan: cfg.plan || "Professional",
-    maxPosters: cfg.maxPosters || 10,
-    agentEmail: cfg.agentEmail || "agent@pabbarealty.com",
-  });
-
+  const [saas, setSaas] = useState(null);
+  const [usedPosters, setUsedPosters] = useState(0);
   const [newUser, setNewUser] = useState({
     name: "",
     phone: "",
     password: "",
     allowedTabs: ALL_TABS.reduce((a, t) => ({ ...a, [t]: true }), {}),
   });
-  const [adminUsers, setAdminUsers] = useState(() => Storage.getAdminUsers());
+  const [adminUsers, setAdminUsers] = useState([]);
 
-  const usedPosters = Storage.getPosters().length;
+  useEffect(() => {
+    db.getConfig().then((cfg) =>
+      setSaas({
+        plan: cfg.plan || "Professional",
+        maxPosters: cfg.maxPosters || 10,
+        agentEmail: cfg.agentEmail || "agent@pabbarealty.com",
+      })
+    );
+    db.getPosters().then((p) => setUsedPosters(p.length));
+    db.getAdminUsers().then(setAdminUsers);
+  }, []);
 
   const updateMaster = () => {
     if (!masterPw.trim()) return toast("Enter a new master password");
@@ -590,14 +610,14 @@ function SuperTab({ toast }) {
     toast("API key saved");
   };
 
-  const saveSaas = () => {
-    Storage.saveConfig({ ...Storage.getConfig(), ...saas });
+  const saveSaas = async () => {
+    await db.saveConfig(saas);
     toast("SaaS settings saved");
   };
 
-  const exportCarousel = () => {
-    const published = Storage.getPosters().filter((p) => p.status === "active").slice(0, 10);
-    const waNumber = Storage.getConfig().waNumber;
+  const exportCarousel = async () => {
+    const published = (await db.getPosters()).filter((p) => p.status === "active").slice(0, 10);
+    const waNumber = db.getCachedWaNumber();
     downloadJSON("carousel_template.json", {
       name: "bindu_deals_carousel",
       language: "en",
@@ -621,44 +641,37 @@ function SuperTab({ toast }) {
   const exportFlow = () => {
     downloadJSON("flow_skeleton.json", {
       version: "3.1",
-      screens: [
-        {
-          id: "DEALS_SCREEN",
-          title: "Bindu Home Services",
-          data: {},
-          layout: { type: "SingleColumnLayout", children: [] },
-        },
-      ],
+      screens: [{ id: "DEALS_SCREEN", title: "Bindu Home Services", data: {}, layout: { type: "SingleColumnLayout", children: [] } }],
     });
     toast("flow_skeleton.json downloaded");
   };
 
-  const appForm = () => {
-    downloadJSON("app_form.json", {
-      brand: Storage.getBrand(),
-      config: Storage.getConfig(),
-      posters: Storage.getPosters(),
-    });
+  const appForm = async () => {
+    const [brand, config, posters] = await Promise.all([db.getBrand(), db.getConfig(), db.getPosters()]);
+    downloadJSON("app_form.json", { brand, config, posters });
     toast("app_form.json downloaded");
   };
 
-  const resetAll = () => {
-    if (!confirm("⚠️ This will erase ALL brand, posters, leads, config and admin users. Continue?")) return;
-    Storage.resetAll();
+  const resetAll = async () => {
+    if (!confirm("⚠️ This will erase ALL posters, offers, templates, leads and admin users. Continue?")) return;
+    await db.resetAllData();
     toast("All data has been reset");
   };
 
-  const createUser = () => {
+  const createUser = async () => {
     if (!newUser.name.trim() || !newUser.password.trim()) return toast("Name and password required");
-    const next = [
-      ...adminUsers,
-      { ...newUser, id: Date.now(), allowedTabs: Object.keys(newUser.allowedTabs).filter((t) => newUser.allowedTabs[t]) },
-    ];
-    setAdminUsers(next);
-    Storage.saveAdminUsers(next);
+    await db.addAdminUser({
+      name: newUser.name,
+      phone: newUser.phone,
+      password: newUser.password,
+      allowedTabs: Object.keys(newUser.allowedTabs).filter((t) => newUser.allowedTabs[t]),
+    });
     setNewUser({ name: "", phone: "", password: "", allowedTabs: ALL_TABS.reduce((a, t) => ({ ...a, [t]: true }), {}) });
+    db.getAdminUsers().then(setAdminUsers);
     toast("Admin user created");
   };
+
+  if (!saas) return <Loading />;
 
   return (
     <div>
@@ -698,7 +711,6 @@ function SuperTab({ toast }) {
       <div className="mb-4 space-y-2">
         <div className="border-l-4 border-[#f59e0b] bg-[#f3f4f6] px-3 py-2 text-sm"><b>Plan:</b> {saas.plan}</div>
         <div className="border-l-4 border-[#f59e0b] bg-[#f3f4f6] px-3 py-2 text-sm"><b>Max Posters:</b> {saas.maxPosters} (Used: {usedPosters})</div>
-        <div className="border-l-4 border-[#f59e0b] bg-[#f3f4f6] px-3 py-2 text-sm"><b>Storage:</b> {storageMB()} MB / 5 MB</div>
       </div>
       <div className="mb-4">
         <Label>Plan</Label>
@@ -719,7 +731,7 @@ function SuperTab({ toast }) {
       {/* Section 5 — Actions */}
       <SectionTitle>Actions</SectionTitle>
       <div className="mb-2"><BlackButton onClick={appForm}>📋 App Form</BlackButton></div>
-      <div className="mb-2"><BlackButton onClick={Storage.backupAll}>💾 All Data Backup</BlackButton></div>
+      <div className="mb-2"><BlackButton onClick={db.backupAll}>💾 All Data Backup</BlackButton></div>
       <RedButton onClick={resetAll}>⚠️ Reset All Data</RedButton>
 
       {/* Section 6 — Create Admin User */}
@@ -752,7 +764,7 @@ function SuperTab({ toast }) {
             <div key={u.id} className="rounded-lg border border-gray-200 p-3 text-sm">
               <p className="font-bold text-gray-900">{u.name}</p>
               <p className="text-gray-500">{u.phone}</p>
-              <p className="mt-1 text-xs text-gray-400">Tabs: {u.allowedTabs.join(", ")}</p>
+              <p className="mt-1 text-xs text-gray-400">Tabs: {(u.allowedTabs || []).join(", ")}</p>
             </div>
           ))}
         </div>
@@ -788,10 +800,7 @@ function AdminPanel() {
         <div className="flex items-center justify-between bg-[#0f172a] px-4 py-4 text-white">
           <div className="flex items-center gap-2 text-lg font-extrabold">⚙️ Admin</div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate("/")}
-              className="rounded-md bg-[#f59e0b] px-3 py-1.5 text-sm font-bold text-[#0f172a]"
-            >
+            <button onClick={() => navigate("/")} className="rounded-md bg-[#f59e0b] px-3 py-1.5 text-sm font-bold text-[#0f172a]">
               📊 Dashboard
             </button>
             <button onClick={logout} title="Logout" className="text-2xl leading-none text-white/80 hover:text-white">
@@ -810,9 +819,7 @@ function AdminPanel() {
                 key={t}
                 onClick={() => setTab(t)}
                 className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold transition-colors ${
-                  active
-                    ? "border-[#f59e0b] text-[#b45309]"
-                    : "border-transparent text-gray-500 hover:text-gray-800"
+                  active ? "border-[#f59e0b] text-[#b45309]" : "border-transparent text-gray-500 hover:text-gray-800"
                 } ${isSuperTab ? "text-orange-600" : ""}`}
               >
                 {isSuperTab ? "👑 Super" : t}

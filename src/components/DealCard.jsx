@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { openWhatsApp } from "../utils/whatsapp";
-import { Storage } from "../utils/storage";
+import { addLead } from "../lib/db";
 
 // Badge colour mapping. Unknown / empty badges render nothing.
 const badgeStyles = {
@@ -39,7 +39,7 @@ function DealCard({ deal, categoryName }) {
 
   const handleInterested = () => {
     const from = categoryName ? ` (${categoryName})` : "";
-    Storage.addLead({
+    addLead({
       dealName: deal.name,
       tab: categoryName || "",
       action: "Interested",

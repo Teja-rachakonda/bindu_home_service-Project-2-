@@ -1,5 +1,5 @@
 import { openWhatsApp } from "../utils/whatsapp";
-import { Storage } from "../utils/storage";
+import { addLead } from "../lib/db";
 
 // Inline WhatsApp glyph so we don't depend on an icon library.
 function WhatsAppIcon({ className }) {
@@ -19,12 +19,12 @@ function WhatsAppIcon({ className }) {
 // `label`, `phone` and `callText` come from the admin Brand/Config settings.
 function WhatsAppButton({ label, phone, callText }) {
   const handleChat = () => {
-    Storage.addLead({ dealName: "General enquiry", tab: "", action: "Chat with Agent" });
+    addLead({ dealName: "General enquiry", tab: "", action: "Chat with Agent" });
     openWhatsApp("Hi! I saw your offer and I would like to know more.");
   };
 
   const handleCall = () => {
-    Storage.addLead({ dealName: "Call request", tab: "", action: "Call" });
+    addLead({ dealName: "Call request", tab: "", action: "Call" });
     window.location.href = `tel:${phone.replace(/[^\d+]/g, "")}`;
   };
 
