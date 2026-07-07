@@ -166,6 +166,7 @@ function PostersTab({ toast }) {
   const [posters, setPosters] = useState(null);
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [viewing, setViewing] = useState(null);
 
   const reload = () => db.getPosters().then(setPosters);
   useEffect(() => {
@@ -197,6 +198,16 @@ function PostersTab({ toast }) {
   const publish = async (p) => {
     await db.savePoster({ ...p, status: p.status === "active" ? "draft" : "active" });
     reload();
+  };
+  const makeTemplate = async (p) => {
+    await db.saveTemplate({
+      name: p.title || "Untitled",
+      details: p.description,
+      image: p.image,
+      badge: p.badge,
+      waMessage: p.waMessage,
+    });
+    toast("Saved as a template!");
   };
 
   const set = (k) => (e) => setEditing({ ...editing, [k]: e.target.value });
@@ -311,8 +322,50 @@ function PostersTab({ toast }) {
               </button>
               <button onClick={() => remove(p.id)} className="flex-1 rounded-md border border-red-300 py-1.5 text-red-600">Delete</button>
             </div>
+            <div className="mt-2 flex gap-2 text-sm font-semibold">
+              <button onClick={() => setViewing(p)} className="flex-1 rounded-md border border-gray-300 py-1.5 text-gray-700">👁 View</button>
+              <button onClick={() => makeTemplate(p)} className="flex-1 rounded-md border border-[#f59e0b] py-1.5 text-[#b45309]">⭐ Make Template</button>
+            </div>
           </div>
         ))}
+      </div>
+
+      {viewing && <PosterPreviewModal poster={viewing} onClose={() => setViewing(null)} />}
+    </div>
+  );
+}
+
+// Shows a poster the way a customer sees it (image, badge, title, description,
+// "Click Here" highlight).
+function PosterPreviewModal({ poster, onClose }) {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="w-full max-w-[360px] overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="relative">
+          {poster.image ? (
+            <img src={poster.image} alt={poster.title} className="block max-h-72 w-full object-cover" />
+          ) : (
+            <div className="flex h-40 items-center justify-center bg-brand px-4 text-center text-lg font-extrabold text-white">
+              {poster.title || "Special Offer"}
+            </div>
+          )}
+          {poster.badge && (
+            <span className="absolute left-3 top-3 rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold text-white shadow">{poster.badge}</span>
+          )}
+          <span className="absolute bottom-3 right-3 rounded-full bg-whatsapp px-3 py-1.5 text-xs font-bold text-white shadow-lg">👉 Click Here</span>
+        </div>
+        <div className="p-4">
+          {poster.title && <p className="font-bold text-gray-900">{poster.title}</p>}
+          {poster.description && <p className="mt-0.5 text-sm text-gray-500">{poster.description}</p>}
+          <span
+            className={`mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
+              poster.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
+            }`}
+          >
+            {poster.status === "active" ? "Active (published)" : "Draft"}
+          </span>
+          <button onClick={onClose} className="mt-3 w-full rounded-md border border-gray-300 py-2 font-bold text-gray-600">Close</button>
+        </div>
       </div>
     </div>
   );
@@ -477,11 +530,12 @@ function OffersTab({ toast }) {
 
 /* ─────────────────────────  Templates tab  ───────────────────────── */
 
-const TEMPLATES = [
+// Built-in quick-starts (always available). The admin's own templates are
+// stored in Supabase and fully editable below.
+const STARTER_TEMPLATES = [
   {
     key: "internet",
     name: "Internet Deal",
-    color: "bg-gradient-to-br from-emerald-600 to-emerald-900",
     poster: {
       title: "Home Internet from $45/mo",
       badge: "POPULAR",
@@ -493,7 +547,6 @@ const TEMPLATES = [
   {
     key: "realestate",
     name: "Real Estate",
-    color: "bg-gradient-to-br from-blue-600 to-slate-800",
     poster: {
       title: "Move-in Ready Homes",
       badge: "NEW ✨",
@@ -505,7 +558,6 @@ const TEMPLATES = [
   {
     key: "rental",
     name: "Rental",
-    color: "bg-gradient-to-br from-emerald-600 to-emerald-900",
     poster: {
       title: "Apartments from $1,800/mo",
       badge: "AVAILABLE NOW",
@@ -516,31 +568,151 @@ const TEMPLATES = [
   },
 ];
 
+const EMPTY_TEMPLATE = { name: "", details: "", image: "", badge: "", waMessage: "" };
+
 function TemplatesTab({ goToPosters, toast }) {
-  const use = async (tpl) => {
+  const [templates, setTemplates] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const reload = () => db.getTemplates().then(setTemplates);
+  useEffect(() => {
+    reload();
+  }, []);
+
+  if (!templates) return <Loading />;
+
+  const openAdd = () => {
+    setEditing({ ...EMPTY_TEMPLATE });
+    setShowForm(true);
+  };
+  const openEdit = (t) => {
+    setEditing({ ...t });
+    setShowForm(true);
+  };
+  const save = async () => {
+    await db.saveTemplate(editing);
+    await reload();
+    setShowForm(false);
+    setEditing(null);
+    toast("Template saved!");
+  };
+  const remove = async (id) => {
+    await db.deleteTemplate(id);
+    reload();
+  };
+
+  // Create a poster (draft) from a saved template or a starter.
+  const createPosterFrom = async (t) => {
+    await db.savePoster({
+      title: t.name,
+      description: t.details,
+      image: t.image,
+      badge: t.badge,
+      waMessage: t.waMessage,
+      status: "draft",
+      knowledgeBase: "",
+    });
+    toast(`Poster created from "${t.name}" (draft)`);
+    goToPosters();
+  };
+  const applyStarter = async (tpl) => {
     await db.savePoster({ ...tpl.poster, status: "draft", knowledgeBase: "" });
     toast(`"${tpl.name}" added to Posters as a draft`);
     goToPosters();
   };
 
+  const set = (k) => (e) => setEditing({ ...editing, [k]: e.target.value });
+  const handleUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setEditing({ ...editing, image: reader.result });
+    reader.readAsDataURL(file);
+  };
+
+  if (showForm) {
+    return (
+      <div>
+        <Field label="Template name" value={editing.name} onChange={set("name")} placeholder="e.g. Internet Deal" />
+        <Field label="Image URL" value={editing.image?.startsWith?.("data:") ? "" : editing.image} onChange={set("image")} placeholder="https://…" />
+        <label className="mb-4 mt-[-8px] flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-[#f59e0b] bg-[#fffbeb] py-3 text-sm font-semibold text-gray-700">
+          📤 Upload image
+          <input type="file" accept="image/*" onChange={handleUpload} className="hidden" />
+        </label>
+        {editing.image && <img src={editing.image} alt="preview" className="mb-4 max-h-40 w-full rounded-lg object-cover" />}
+        <div className="mb-4">
+          <Label>Description</Label>
+          <textarea
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 outline-none focus:border-[#f59e0b]"
+            rows={3}
+            value={editing.details}
+            onChange={set("details")}
+          />
+        </div>
+        <Field label="Badge" value={editing.badge} onChange={set("badge")} placeholder="HOT DEAL 🔥" />
+        <Field label="WhatsApp message" value={editing.waMessage} onChange={set("waMessage")} placeholder="Hi! I saw your offer…" />
+
+        <div className="flex gap-2">
+          <BlackButton onClick={save}>💾 Save Template</BlackButton>
+          <button
+            onClick={() => {
+              setShowForm(false);
+              setEditing(null);
+            }}
+            className="w-full rounded-md border border-gray-300 bg-white py-3 font-bold text-gray-600"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm text-gray-500">
-        Pick a starting style — it's copied to the Posters tab as a draft you can edit.
-      </p>
-      {TEMPLATES.map((t) => (
-        <div key={t.key} className="overflow-hidden rounded-xl border border-gray-200">
-          <div className={`flex h-28 items-center justify-center text-lg font-extrabold text-white ${t.color}`}>
-            {t.poster.title}
-          </div>
-          <div className="flex items-center justify-between p-3">
+    <div>
+      <BlackButton onClick={openAdd} className="mb-4">＋ Create Template</BlackButton>
+
+      {/* Admin's own templates (full CRUD) */}
+      {templates.length === 0 ? (
+        <p className="py-4 text-center text-sm text-gray-400">
+          No templates yet. Create one, or turn a poster into a template from the Posters tab.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {templates.map((t) => (
+            <div key={t.id} className="overflow-hidden rounded-xl border border-gray-200">
+              {t.image ? (
+                <img src={t.image} alt="" className="h-24 w-full object-cover" />
+              ) : (
+                <div className="flex h-24 items-center justify-center bg-brand font-bold text-white">{t.name || "Template"}</div>
+              )}
+              <div className="p-3">
+                <p className="font-bold text-gray-900">{t.name || "Untitled template"}</p>
+                {t.details && <p className="mt-0.5 text-sm text-gray-500">{t.details}</p>}
+                <div className="mt-2 flex gap-2 text-sm font-semibold">
+                  <button onClick={() => createPosterFrom(t)} className="flex-1 rounded-md border border-[#f59e0b] bg-[#111] py-1.5 text-[#f59e0b]">＋ Create Poster</button>
+                  <button onClick={() => openEdit(t)} className="flex-1 rounded-md border border-gray-300 py-1.5 text-gray-700">Edit</button>
+                  <button onClick={() => remove(t.id)} className="flex-1 rounded-md border border-red-300 py-1.5 text-red-600">Delete</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Built-in quick starts */}
+      <SectionTitle>Quick starts</SectionTitle>
+      <div className="flex flex-col gap-3">
+        {STARTER_TEMPLATES.map((t) => (
+          <div key={t.key} className="flex items-center justify-between rounded-xl border border-gray-200 p-3">
             <span className="font-bold text-gray-900">{t.name}</span>
-            <button onClick={() => use(t)} className="rounded-md border border-[#f59e0b] bg-[#111] px-4 py-2 text-sm font-bold text-[#f59e0b]">
-              Use Template
+            <button onClick={() => applyStarter(t)} className="rounded-md border border-[#f59e0b] bg-[#111] px-4 py-2 text-sm font-bold text-[#f59e0b]">
+              Use
             </button>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

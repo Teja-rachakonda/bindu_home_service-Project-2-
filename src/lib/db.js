@@ -119,6 +119,12 @@ export async function getTemplates() {
 export async function saveTemplate(t) {
   const row = toSnake(t);
   delete row.created_at;
+  if (row.id) {
+    const { data, error } = await supabase
+      .from("templates").update(row).eq("id", row.id).select().maybeSingle();
+    if (error) throw error;
+    return toCamel(data);
+  }
   delete row.id;
   const { data, error } = await supabase.from("templates").insert(row).select().maybeSingle();
   if (error) throw error;
