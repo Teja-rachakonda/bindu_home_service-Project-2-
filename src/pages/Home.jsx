@@ -8,18 +8,15 @@ import DealCard from "../components/DealCard";
 import WhatsAppButton from "../components/WhatsAppButton";
 import AdminPosters from "../components/AdminPosters";
 import LeadModal from "../components/LeadModal";
-import { categories } from "../data/deals";
+import { CATEGORY_ASSETS } from "../data/deals";
 import * as db from "../lib/db";
-
-// Static per-tab metadata (name, hero poster, voice note, poster strip).
-// The actual deals ("offers") come from Supabase and are merged in below.
-const CATEGORY_META = categories.map(({ deals: _deals, ...meta }) => meta);
 
 function Home() {
   const [brand, setBrand] = useState({});
   const [config, setConfig] = useState({});
   const [adminPosters, setAdminPosters] = useState([]);
   const [offers, setOffers] = useState([]);
+  const [cats, setCats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState(null);
   const [leadReq, setLeadReq] = useState(null); // "Click Here" lead-capture request
@@ -27,17 +24,19 @@ function Home() {
   useEffect(() => {
     let alive = true;
     (async () => {
-      const [b, c, ap, off] = await Promise.all([
+      const [b, c, ap, off, ct] = await Promise.all([
         db.getBrand(),
         db.getConfig(),
         db.getActivePosters(),
         db.getOffers(),
+        db.getCategories(),
       ]);
       if (!alive) return;
       setBrand(b);
       setConfig(c);
       setAdminPosters(ap);
       setOffers(off);
+      setCats(ct);
       setLoading(false);
     })();
     return () => {
@@ -45,17 +44,19 @@ function Home() {
     };
   }, []);
 
-  // Categories that are active and not hidden in admin Config, each with its
-  // DB offers merged in.
+  // Active tabs (from admin), each merged with its hero assets + DB offers.
+  // `id` = the category key so the rest of the UI can stay the same.
   const activeCategories = useMemo(
     () =>
-      CATEGORY_META.filter(
-        (c) => c.active && config.tabs?.[c.id] !== false
-      ).map((c) => ({
-        ...c,
-        deals: offers.filter((o) => o.category === c.id && o.active !== false),
-      })),
-    [config, offers]
+      cats
+        .filter((c) => c.active !== false)
+        .map((c) => ({
+          id: c.key,
+          name: c.name,
+          ...(CATEGORY_ASSETS[c.key] || {}),
+          deals: offers.filter((o) => o.category === c.key && o.active !== false),
+        })),
+    [cats, offers]
   );
 
   // Pick the first tab once categories are known.

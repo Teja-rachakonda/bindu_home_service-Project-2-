@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { DEFAULT_CATEGORIES } from "../data/deals";
 
 /*
  * Async data-access layer backed by Supabase. Components use camelCase; the
@@ -85,6 +86,39 @@ export async function savePoster(poster) {
 }
 export async function deletePoster(id) {
   await supabase.from("posters").delete().eq("id", id);
+}
+
+/* ───────────── CATEGORIES (tabs) ───────────── */
+const slugKey = (name) =>
+  (name || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "") || `tab_${Date.now()}`;
+
+export async function getCategories() {
+  const { data, error } = await supabase
+    .from("categories").select("*").order("sort_order");
+  // Fall back to the built-in tabs if the table doesn't exist yet / is empty.
+  if (error || !data || data.length === 0) return DEFAULT_CATEGORIES;
+  return toCamelList(data);
+}
+export async function saveCategory(c) {
+  const row = toSnake(c);
+  delete row.created_at;
+  if (!row.key) row.key = slugKey(c.name);
+  if (row.id) {
+    const { data, error } = await supabase
+      .from("categories").update(row).eq("id", row.id).select().maybeSingle();
+    if (error) throw error;
+    return toCamel(data);
+  }
+  delete row.id;
+  const { data, error } = await supabase.from("categories").insert(row).select().maybeSingle();
+  if (error) throw error;
+  return toCamel(data);
+}
+export async function deleteCategory(id) {
+  await supabase.from("categories").delete().eq("id", id);
 }
 
 /* ───────────── OFFERS (deal cards) ───────────── */

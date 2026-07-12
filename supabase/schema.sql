@@ -50,6 +50,24 @@ create table if not exists posters (
   created_at     timestamptz default now()
 );
 
+-- 3b. CATEGORIES (tabs) --------------------------------------
+create table if not exists categories (
+  id         uuid primary key default gen_random_uuid(),
+  key        text unique,
+  name       text default '',
+  sort_order int default 0,
+  active     boolean default true,
+  created_at timestamptz default now()
+);
+insert into categories (key, name, sort_order)
+select * from (values
+  ('internet','Internet Deals',1),
+  ('rental','Rental',2),
+  ('homePhone','Home Phone',3),
+  ('mobile','Mobile Plans',4)
+) as v(key, name, sort_order)
+on conflict (key) do nothing;
+
 -- 4. OFFERS (the deal cards) ---------------------------------
 create table if not exists offers (
   id         uuid primary key default gen_random_uuid(),
@@ -128,6 +146,7 @@ where not exists (select 1 from offers);
 -- ============================================================
 alter table brand       enable row level security;
 alter table config      enable row level security;
+alter table categories  enable row level security;
 alter table posters     enable row level security;
 alter table offers      enable row level security;
 alter table templates   enable row level security;
@@ -136,6 +155,7 @@ alter table admin_users enable row level security;
 
 drop policy if exists "demo brand"       on brand;
 drop policy if exists "demo config"      on config;
+drop policy if exists "demo categories"  on categories;
 drop policy if exists "demo posters"     on posters;
 drop policy if exists "demo offers"      on offers;
 drop policy if exists "demo templates"   on templates;
@@ -144,6 +164,7 @@ drop policy if exists "demo admin_users" on admin_users;
 
 create policy "demo brand"       on brand       for all using (true) with check (true);
 create policy "demo config"      on config      for all using (true) with check (true);
+create policy "demo categories"  on categories  for all using (true) with check (true);
 create policy "demo posters"     on posters     for all using (true) with check (true);
 create policy "demo offers"      on offers      for all using (true) with check (true);
 create policy "demo templates"   on templates   for all using (true) with check (true);

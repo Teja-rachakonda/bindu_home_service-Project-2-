@@ -77,13 +77,6 @@ function Loading() {
 
 const ALL_TABS = ["Brand", "Posters", "Offers", "Templates", "Published", "Config", "Leads"];
 
-const OFFER_CATEGORIES = [
-  { id: "internet", label: "Internet Deals" },
-  { id: "rental", label: "Rental" },
-  { id: "homePhone", label: "Home Phone" },
-  { id: "mobile", label: "Mobile Plans" },
-];
-
 /* ─────────────────────────  Brand tab  ───────────────────────── */
 
 function BrandTab({ toast }) {
@@ -386,6 +379,7 @@ const EMPTY_OFFER = {
 
 function OffersTab({ toast }) {
   const [offers, setOffers] = useState(null);
+  const [categories, setCategories] = useState([]);
   const [cat, setCat] = useState("internet");
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -393,6 +387,10 @@ function OffersTab({ toast }) {
   const reload = () => db.getOffers().then(setOffers);
   useEffect(() => {
     reload();
+    db.getCategories().then((cs) => {
+      setCategories(cs);
+      setCat((prev) => (cs.some((c) => c.key === prev) ? prev : cs[0]?.key || prev));
+    });
   }, []);
 
   if (!offers) return <Loading />;
@@ -433,8 +431,8 @@ function OffersTab({ toast }) {
             value={editing.category}
             onChange={set("category")}
           >
-            {OFFER_CATEGORIES.map((c) => (
-              <option key={c.id} value={c.id}>{c.label}</option>
+            {categories.map((c) => (
+              <option key={c.key} value={c.key}>{c.name}</option>
             ))}
           </select>
         </div>
@@ -478,15 +476,15 @@ function OffersTab({ toast }) {
     <div>
       {/* Category selector */}
       <div className="no-scrollbar mb-4 flex gap-2 overflow-x-auto">
-        {OFFER_CATEGORIES.map((c) => (
+        {categories.map((c) => (
           <button
-            key={c.id}
-            onClick={() => setCat(c.id)}
+            key={c.key}
+            onClick={() => setCat(c.key)}
             className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold ${
-              cat === c.id ? "bg-[#111] text-[#f59e0b]" : "bg-gray-100 text-gray-600"
+              cat === c.key ? "bg-[#111] text-[#f59e0b]" : "bg-gray-100 text-gray-600"
             }`}
           >
-            {c.label}
+            {c.name}
           </button>
         ))}
       </div>
@@ -767,13 +765,6 @@ function PublishedTab({ toast }) {
 
 /* ─────────────────────────  Config tab  ───────────────────────── */
 
-const TAB_OPTIONS = [
-  { id: "internet", label: "Internet Deals" },
-  { id: "rental", label: "Rental" },
-  { id: "homePhone", label: "Home Phone" },
-  { id: "mobile", label: "Mobile Plans" },
-];
-
 function Toggle({ on, onClick }) {
   return (
     <button
@@ -788,6 +779,7 @@ function Toggle({ on, onClick }) {
 
 function ConfigTab({ toast }) {
   const [form, setForm] = useState(null);
+  const [cats, setCats] = useState(null);
 
   useEffect(() => {
     db.getConfig().then((cfg) =>
@@ -795,18 +787,34 @@ function ConfigTab({ toast }) {
         waNumber: cfg.waNumber || "16477408124",
         connectText: cfg.connectText || "💬 Connect with Agent",
         callText: cfg.callText || "📞 Call Us Now",
-        tabs: { internet: true, rental: true, homePhone: true, mobile: true, ...cfg.tabs },
       })
     );
+    db.getCategories().then(setCats);
   }, []);
 
-  if (!form) return <Loading />;
+  if (!form || !cats) return <Loading />;
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
-  const toggleTab = (id) => setForm({ ...form, tabs: { ...form.tabs, [id]: !form.tabs[id] } });
-
-  const save = async () => {
+  const saveCfg = async () => {
     await db.saveConfig(form);
     toast("Config saved!");
+  };
+
+  // Tabs (categories) manager
+  const patchCat = (i, patch) => setCats(cats.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
+  const addTab = () => setCats([...cats, { name: "New Tab", active: true, sortOrder: cats.length + 1 }]);
+  const saveTab = async (c) => {
+    await db.saveCategory(c);
+    setCats(await db.getCategories());
+    toast("Tab saved!");
+  };
+  const removeTab = async (c, i) => {
+    if (c.id) {
+      await db.deleteCategory(c.id);
+      setCats(await db.getCategories());
+    } else {
+      setCats(cats.filter((_, idx) => idx !== i));
+    }
+    toast("Tab removed");
   };
 
   return (
@@ -814,17 +822,36 @@ function ConfigTab({ toast }) {
       <Field label="WhatsApp Number" value={form.waNumber} onChange={set("waNumber")} />
       <Field label="Connect Button Text" value={form.connectText} onChange={set("connectText")} />
       <Field label="Call Button Text" value={form.callText} onChange={set("callText")} />
+      <BlackButton onClick={saveCfg}>💾 Save</BlackButton>
 
-      <SectionTitle>Show / Hide Tabs</SectionTitle>
-      {TAB_OPTIONS.map((t) => (
-        <div key={t.id} className="flex items-center justify-between border-b border-gray-100 py-2.5">
-          <span className="font-medium text-gray-800">{t.label}</span>
-          <Toggle on={form.tabs[t.id]} onClick={() => toggleTab(t.id)} />
-        </div>
-      ))}
-
-      <div className="mt-5">
-        <BlackButton onClick={save}>💾 Save</BlackButton>
+      <SectionTitle>Tabs (categories)</SectionTitle>
+      <p className="mb-3 text-sm text-gray-500">
+        Add, rename, show/hide or remove the tabs shown on the public page. Click <b>Save</b> on a tab to apply.
+      </p>
+      <div className="flex flex-col gap-3">
+        {cats.map((c, i) => (
+          <div key={c.id || `new-${i}`} className="rounded-xl border border-gray-200 p-3">
+            <input
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none focus:border-[#f59e0b]"
+              value={c.name}
+              onChange={(e) => patchCat(i, { name: e.target.value })}
+              placeholder="Tab name"
+            />
+            <div className="mt-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Visible</span>
+                <Toggle on={c.active !== false} onClick={() => patchCat(i, { active: !(c.active !== false) })} />
+              </div>
+              <div className="flex gap-2 text-sm font-semibold">
+                <button onClick={() => saveTab(c)} className="rounded-md border border-[#f59e0b] px-3 py-1.5 text-[#b45309]">Save</button>
+                <button onClick={() => removeTab(c, i)} className="rounded-md border border-red-300 px-3 py-1.5 text-red-600">Delete</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3">
+        <BlackButton onClick={addTab}>＋ Add Tab</BlackButton>
       </div>
     </div>
   );
