@@ -905,27 +905,48 @@ function LeadsTab({ toast }) {
       {leads.length === 0 ? (
         <p className="py-8 text-center text-sm text-gray-400">No leads yet. Share your card link!</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-xs uppercase text-gray-500">
-                <th className="py-2 pr-2">Time</th>
-                <th className="py-2 pr-2">Deal</th>
-                <th className="py-2 pr-2">Tab</th>
-                <th className="py-2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leads.map((l) => (
-                <tr key={l.id} className="border-b border-gray-100">
-                  <td className="py-2 pr-2 text-gray-500">{new Date(l.createdAt).toLocaleString()}</td>
-                  <td className="py-2 pr-2 font-medium text-gray-900">{l.dealName}</td>
-                  <td className="py-2 pr-2 text-gray-600">{l.tab}</td>
-                  <td className="py-2 text-gray-600">{l.action}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex flex-col gap-3">
+          {leads.map((l) => {
+            const name = [l.firstName, l.lastName].filter(Boolean).join(" ");
+            const waPhone = (l.phone || "").replace(/[^\d]/g, "");
+            return (
+              <div key={l.id} className="rounded-xl border border-gray-200 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-bold text-gray-900">{name || "Unnamed lead"}</p>
+                  <span className="shrink-0 text-xs text-gray-400">
+                    {new Date(l.createdAt).toLocaleString()}
+                  </span>
+                </div>
+
+                {(l.phone || l.email) && (
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                    {l.phone && (
+                      <a href={`tel:${l.phone}`} className="font-semibold text-[#b45309]">📞 {l.phone}</a>
+                    )}
+                    {l.email && (
+                      <a href={`mailto:${l.email}`} className="text-[#b45309]">✉️ {l.email}</a>
+                    )}
+                    {waPhone && (
+                      <a
+                        href={`https://wa.me/${waPhone}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-full bg-whatsapp px-2.5 py-0.5 text-xs font-bold text-white"
+                      >
+                        Message
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                <p className="mt-1.5 text-sm text-gray-500">
+                  <span className="font-medium text-gray-700">{l.action}</span>
+                  {l.dealName ? ` — ${l.dealName}` : ""}
+                  {l.tab ? ` (${l.tab})` : ""}
+                </p>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
