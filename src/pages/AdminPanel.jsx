@@ -91,6 +91,8 @@ function BrandTab({ toast }) {
         footerTop: "",
         footerBottom: "",
         phone: "+1 647-740-8124",
+        headerColor: "",
+        textColor: "",
         ...b,
       })
     );
@@ -137,6 +139,34 @@ function BrandTab({ toast }) {
       <Field label="Footer Top" value={form.footerTop} onChange={set("footerTop")} />
       <Field label="Footer Bottom" value={form.footerBottom} onChange={set("footerBottom")} />
       <Field label="Phone" value={form.phone} onChange={set("phone")} />
+
+      <SectionTitle>Header colours</SectionTitle>
+      <div className="mb-4">
+        <Label>Header background</Label>
+        <div className="flex items-center gap-3">
+          <input
+            type="color"
+            value={form.headerColor || "#0d6e56"}
+            onChange={set("headerColor")}
+            className="h-10 w-16 rounded border border-gray-300"
+          />
+          <span className="text-sm text-gray-500">{form.headerColor || "default green"}</span>
+          <button type="button" onClick={() => setForm({ ...form, headerColor: "" })} className="ml-auto text-sm text-gray-500 underline">Reset</button>
+        </div>
+      </div>
+      <div className="mb-4">
+        <Label>Header text</Label>
+        <div className="flex items-center gap-3">
+          <input
+            type="color"
+            value={form.textColor || "#ffffff"}
+            onChange={set("textColor")}
+            className="h-10 w-16 rounded border border-gray-300"
+          />
+          <span className="text-sm text-gray-500">{form.textColor || "default white"}</span>
+          <button type="button" onClick={() => setForm({ ...form, textColor: "" })} className="ml-auto text-sm text-gray-500 underline">Reset</button>
+        </div>
+      </div>
 
       <BlackButton onClick={save}>💾 Save</BlackButton>
     </div>
@@ -373,6 +403,7 @@ const EMPTY_OFFER = {
   price: "",
   tag: "",
   badge: "",
+  description: "",
   active: true,
   sortOrder: 0,
 };
@@ -441,6 +472,16 @@ function OffersTab({ toast }) {
         <Field label="Price" value={editing.price} onChange={set("price")} placeholder="$45/mo" />
         <Field label="Tag (small line)" value={editing.tag} onChange={set("tag")} placeholder="Best for 1-2 users" />
         <Field label="Badge" value={editing.badge} onChange={set("badge")} placeholder="Popular / Best Value / New" />
+        <div className="mb-4">
+          <Label>Description</Label>
+          <textarea
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 outline-none focus:border-[#f59e0b]"
+            rows={3}
+            value={editing.description || ""}
+            onChange={set("description")}
+            placeholder="More text about this offer…"
+          />
+        </div>
         <Field label="Sort order" type="number" value={editing.sortOrder} onChange={(e) => setEditing({ ...editing, sortOrder: Number(e.target.value) })} />
 
         <div className="mb-4 flex items-center gap-3">
@@ -780,27 +821,37 @@ function Toggle({ on, onClick }) {
 function ConfigTab({ toast }) {
   const [form, setForm] = useState(null);
   const [cats, setCats] = useState(null);
+  const [socials, setSocials] = useState([]);
 
   useEffect(() => {
-    db.getConfig().then((cfg) =>
+    db.getConfig().then((cfg) => {
       setForm({
         waNumber: cfg.waNumber || "16477408124",
         connectText: cfg.connectText || "💬 Connect with Agent",
         callText: cfg.callText || "📞 Call Us Now",
-      })
-    );
+      });
+      setSocials(Array.isArray(cfg.socials) ? cfg.socials : []);
+    });
     db.getCategories().then(setCats);
   }, []);
 
   if (!form || !cats) return <Loading />;
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
   const saveCfg = async () => {
-    await db.saveConfig(form);
+    await db.saveConfig({ ...form, socials });
     toast("Config saved!");
   };
 
-  // Tabs (categories) manager
+  // Tabs (categories) manager. The Visible toggle auto-saves so a hidden tab
+  // is never lost when the list reloads.
   const patchCat = (i, patch) => setCats(cats.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
+  const toggleCat = async (c, i) => {
+    const next = { ...c, active: !(c.active !== false) };
+    patchCat(i, { active: next.active });
+    const saved = await db.saveCategory(next);
+    setCats((cur) => cur.map((x, idx) => (idx === i ? saved : x)));
+    toast(next.active ? "Tab shown" : "Tab hidden");
+  };
   const addTab = () => setCats([...cats, { name: "New Tab", active: true, sortOrder: cats.length + 1 }]);
   const saveTab = async (c) => {
     await db.saveCategory(c);
@@ -817,16 +868,47 @@ function ConfigTab({ toast }) {
     toast("Tab removed");
   };
 
+  // Social links manager
+  const patchSocial = (i, patch) => setSocials(socials.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+  const addSocial = () => setSocials([...socials, { name: "", url: "" }]);
+  const removeSocial = (i) => setSocials(socials.filter((_, idx) => idx !== i));
+
   return (
     <div>
       <Field label="WhatsApp Number" value={form.waNumber} onChange={set("waNumber")} />
       <Field label="Connect Button Text" value={form.connectText} onChange={set("connectText")} />
       <Field label="Call Button Text" value={form.callText} onChange={set("callText")} />
-      <BlackButton onClick={saveCfg}>💾 Save</BlackButton>
+
+      <SectionTitle>Social media links</SectionTitle>
+      <p className="mb-3 text-sm text-gray-500">Shown on the public page. e.g. Facebook, Instagram, TikTok.</p>
+      <div className="flex flex-col gap-2">
+        {socials.map((s, i) => (
+          <div key={i} className="flex gap-2">
+            <input
+              className="w-1/3 rounded-lg border border-gray-300 px-2 py-2 text-sm text-gray-900 outline-none focus:border-[#f59e0b]"
+              value={s.name}
+              onChange={(e) => patchSocial(i, { name: e.target.value })}
+              placeholder="Name"
+            />
+            <input
+              className="flex-1 rounded-lg border border-gray-300 px-2 py-2 text-sm text-gray-900 outline-none focus:border-[#f59e0b]"
+              value={s.url}
+              onChange={(e) => patchSocial(i, { url: e.target.value })}
+              placeholder="https://…"
+            />
+            <button onClick={() => removeSocial(i)} className="rounded-md border border-red-300 px-2 text-sm font-bold text-red-600">✕</button>
+          </div>
+        ))}
+      </div>
+      <button onClick={addSocial} className="mt-2 rounded-md border border-[#f59e0b] px-3 py-1.5 text-sm font-bold text-[#b45309]">＋ Add link</button>
+
+      <div className="mt-4">
+        <BlackButton onClick={saveCfg}>💾 Save Config</BlackButton>
+      </div>
 
       <SectionTitle>Tabs (categories)</SectionTitle>
       <p className="mb-3 text-sm text-gray-500">
-        Add, rename, show/hide or remove the tabs shown on the public page. Click <b>Save</b> on a tab to apply.
+        Add, rename, show/hide or remove the tabs shown on the public page. The <b>Visible</b> toggle saves instantly; click <b>Save</b> after renaming.
       </p>
       <div className="flex flex-col gap-3">
         {cats.map((c, i) => (
@@ -840,7 +922,7 @@ function ConfigTab({ toast }) {
             <div className="mt-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600">Visible</span>
-                <Toggle on={c.active !== false} onClick={() => patchCat(i, { active: !(c.active !== false) })} />
+                <Toggle on={c.active !== false} onClick={() => toggleCat(c, i)} />
               </div>
               <div className="flex gap-2 text-sm font-semibold">
                 <button onClick={() => saveTab(c)} className="rounded-md border border-[#f59e0b] px-3 py-1.5 text-[#b45309]">Save</button>

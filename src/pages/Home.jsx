@@ -69,6 +69,7 @@ function Home() {
   const active =
     activeCategories.find((c) => c.id === activeId) ?? activeCategories[0];
   const activeDeals = active?.deals ?? [];
+  const socials = Array.isArray(config.socials) ? config.socials : [];
 
   return (
     <div className="min-h-svh bg-page">
@@ -125,6 +126,28 @@ function Home() {
                   />
                 ))}
               </div>
+
+              {/* Footer: social links + brand details */}
+              <footer className="mt-8 border-t border-gray-100 pt-4 text-center">
+                {socials.length > 0 && (
+                  <div className="mb-2 flex flex-wrap justify-center gap-x-4 gap-y-1">
+                    {socials.map((s, i) => (
+                      <a
+                        key={i}
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-semibold text-brand"
+                      >
+                        {s.name || s.url}
+                      </a>
+                    ))}
+                  </div>
+                )}
+                {brand.footerTop && <p className="text-sm font-semibold text-gray-700">{brand.footerTop}</p>}
+                {brand.footerBottom && <p className="text-xs text-gray-500">{brand.footerBottom}</p>}
+                {brand.phone && <p className="mt-0.5 text-xs text-gray-500">📞 {brand.phone}</p>}
+              </footer>
             </>
           )}
         </main>

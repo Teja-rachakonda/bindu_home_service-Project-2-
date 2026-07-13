@@ -137,6 +137,12 @@ select * from (values
 ) as v(category, name, details, price, tag, badge, sort_order)
 where not exists (select 1 from offers);
 
+-- Extra columns added later (idempotent) -------------------
+alter table offers add column if not exists description  text default '';
+alter table brand  add column if not exists header_color text default '';
+alter table brand  add column if not exists text_color   text default '';
+alter table config add column if not exists socials      jsonb default '[]';
+
 -- ============================================================
 --  Row Level Security
 --  DEMO policies: the public anon key can read/write everything.

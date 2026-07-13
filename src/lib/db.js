@@ -23,6 +23,27 @@ const toCamel = (obj) => {
 };
 const toCamelList = (arr) => (arr || []).map(toCamel);
 
+// Write a row, and if the DB is missing a not-yet-migrated column, drop that
+// column and retry — so saves never break before an ALTER has been run.
+async function writeRow({ table, row, id }) {
+  const attempt = { ...row };
+  for (let i = 0; i < 8; i++) {
+    const q =
+      id !== undefined && id !== null
+        ? supabase.from(table).update(attempt).eq("id", id).select().maybeSingle()
+        : supabase.from(table).insert(attempt).select().maybeSingle();
+    const { data, error } = await q;
+    if (!error) return data;
+    const m = /'([a-z_]+)' column/.exec(error.message || "");
+    if (m && m[1] in attempt) {
+      delete attempt[m[1]];
+      continue;
+    }
+    throw error;
+  }
+  return null;
+}
+
 // Cache the WhatsApp number so the synchronous openWhatsApp() can read it.
 let _waNumberCache = "16477408124";
 export const getCachedWaNumber = () => _waNumberCache;
@@ -36,10 +57,7 @@ export async function saveBrand(patch) {
   const row = toSnake(patch);
   delete row.id;
   row.updated_at = new Date().toISOString();
-  const { data, error } = await supabase
-    .from("brand").update(row).eq("id", 1).select().maybeSingle();
-  if (error) throw error;
-  return toCamel(data);
+  return toCamel(await writeRow({ table: "brand", row, id: 1 }));
 }
 
 /* ───────────── CONFIG (singleton id=1) ───────────── */
@@ -52,9 +70,7 @@ export async function saveConfig(patch) {
   const row = toSnake(patch);
   delete row.id;
   row.updated_at = new Date().toISOString();
-  const { data, error } = await supabase
-    .from("config").update(row).eq("id", 1).select().maybeSingle();
-  if (error) throw error;
+  const data = await writeRow({ table: "config", row, id: 1 });
   if (data?.wa_number) _waNumberCache = data.wa_number;
   return toCamel(data);
 }
@@ -130,16 +146,9 @@ export async function getOffers() {
 export async function saveOffer(offer) {
   const row = toSnake(offer);
   delete row.created_at;
-  if (row.id) {
-    const { data, error } = await supabase
-      .from("offers").update(row).eq("id", row.id).select().maybeSingle();
-    if (error) throw error;
-    return toCamel(data);
-  }
+  const id = row.id;
   delete row.id;
-  const { data, error } = await supabase.from("offers").insert(row).select().maybeSingle();
-  if (error) throw error;
-  return toCamel(data);
+  return toCamel(await writeRow({ table: "offers", row, id }));
 }
 export async function deleteOffer(id) {
   await supabase.from("offers").delete().eq("id", id);

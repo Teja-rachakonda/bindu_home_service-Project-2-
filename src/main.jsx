@@ -9,11 +9,13 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>,
 )
 
-// Register the service worker so the app is installable and works offline.
+// Remove any previously-installed service worker + caches so the app always
+// shows live data (a live sales tool must never serve a stale snapshot).
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
-      /* SW is a progressive enhancement — ignore failures */
-    })
-  })
+  navigator.serviceWorker.getRegistrations().then((regs) =>
+    regs.forEach((r) => r.unregister())
+  )
+  if (window.caches) {
+    caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)))
+  }
 }

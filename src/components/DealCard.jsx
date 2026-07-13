@@ -80,6 +80,9 @@ function DealCard({ deal, categoryName, onRequestLead }) {
           </div>
           <p className="mt-0.5 text-sm text-gray-500">{deal.details}</p>
           <p className="mt-1 text-sm text-gray-400">{deal.tag}</p>
+          {deal.description && (
+            <p className="mt-1 text-sm text-gray-500">{deal.description}</p>
+          )}
         </div>
 
         <div className="shrink-0 text-right">

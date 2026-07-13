@@ -8,8 +8,12 @@ function Header({ brand = {} }) {
     typeof logo === "string" &&
     (logo.startsWith("data:") || logo.startsWith("http") || logo.startsWith("/"));
 
+  // Admin-configurable colours (fall back to the brand green / white).
+  const headerStyle = brand.headerColor ? { backgroundColor: brand.headerColor } : undefined;
+  const textStyle = brand.textColor ? { color: brand.textColor } : undefined;
+
   return (
-    <header className="bg-brand text-white rounded-b-2xl px-5 pt-6 pb-4 shadow-md">
+    <header style={headerStyle} className="bg-brand text-white rounded-b-2xl px-5 pt-6 pb-4 shadow-md">
       <div className="flex items-center gap-3">
         {/* Logo (emoji/text, or uploaded image) */}
         <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/15 text-2xl">
@@ -21,8 +25,8 @@ function Header({ brand = {} }) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <h1 className="text-lg font-bold leading-tight">{title}</h1>
-          <p className="text-sm text-white/80 leading-tight">{subtitle}</p>
+          <h1 style={textStyle} className="text-lg font-bold leading-tight">{title}</h1>
+          <p style={textStyle} className="text-sm text-white/80 leading-tight">{subtitle}</p>
         </div>
 
         {/* Live offers indicator */}
