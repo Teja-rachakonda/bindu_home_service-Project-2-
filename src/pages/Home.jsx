@@ -8,6 +8,7 @@ import DealCard from "../components/DealCard";
 import WhatsAppButton from "../components/WhatsAppButton";
 import AdminPosters from "../components/AdminPosters";
 import LeadModal from "../components/LeadModal";
+import SubscribeModal from "../components/SubscribeModal";
 import { CATEGORY_ASSETS } from "../data/deals";
 import * as db from "../lib/db";
 
@@ -20,6 +21,10 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState(null);
   const [leadReq, setLeadReq] = useState(null); // "Click Here" lead-capture request
+  const [showSub, setShowSub] = useState(false);
+  const [subscribed, setSubscribed] = useState(
+    typeof localStorage !== "undefined" && localStorage.getItem("bindu_subscribed") === "1"
+  );
 
   useEffect(() => {
     let alive = true;
@@ -81,6 +86,15 @@ function Home() {
             <p className="py-16 text-center text-sm text-gray-400">Loading offers…</p>
           ) : (
             <>
+              {/* 🔔 Alert Me — subscribe for new-deal alerts */}
+              <button
+                type="button"
+                onClick={() => setShowSub(true)}
+                className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-50 py-2.5 text-sm font-bold text-amber-800 active:scale-[0.99]"
+              >
+                🔔 {subscribed ? "You're subscribed — update alerts" : "Get alerts for new deals"}
+              </button>
+
               {/* Admin-created posters (framed, clickable) at the very top */}
               {adminPosters.length > 0 && (
                 <div className="mb-4">
@@ -161,6 +175,11 @@ function Home() {
       />
 
       <LeadModal req={leadReq} onClose={() => setLeadReq(null)} />
+      <SubscribeModal
+        open={showSub}
+        onClose={() => setShowSub(false)}
+        onDone={() => setSubscribed(true)}
+      />
     </div>
   );
 }

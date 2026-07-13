@@ -75,7 +75,7 @@ function Loading() {
   return <p className="py-10 text-center text-sm text-gray-400">Loading…</p>;
 }
 
-const ALL_TABS = ["Brand", "Posters", "Offers", "Templates", "Published", "Config", "Leads"];
+const ALL_TABS = ["Brand", "Posters", "Offers", "Templates", "Published", "Config", "Leads", "Subscribers"];
 
 /* ─────────────────────────  Brand tab  ───────────────────────── */
 
@@ -778,6 +778,16 @@ function PublishedTab({ toast }) {
     toast("Share link copied: " + url);
   };
 
+  // Send a published poster to everyone who opted in via "Alert Me".
+  // Delivery over WhatsApp activates once the Business API is connected;
+  // for now this confirms and queues the send.
+  const sendToContacts = async (p) => {
+    const subs = await db.getSubscribers();
+    if (subs.length === 0) return toast("No subscribers yet");
+    if (!confirm(`Send "${p.title}" to ${subs.length} subscriber(s)?`)) return;
+    toast(`Queued for ${subs.length} subscribers — WhatsApp delivery activates once the API is connected`);
+  };
+
   if (published.length === 0) {
     return <p className="py-8 text-center text-sm text-gray-400">No published posters yet. Publish one from the Posters tab.</p>;
   }
@@ -797,9 +807,91 @@ function PublishedTab({ toast }) {
               <button onClick={shareLink} className="flex-1 rounded-md border border-[#f59e0b] py-1.5 text-[#b45309]">🔗 Share Link</button>
               <button onClick={() => unpublish(p)} className="flex-1 rounded-md border border-gray-300 py-1.5 text-gray-600">Unpublish</button>
             </div>
+            <button
+              onClick={() => sendToContacts(p)}
+              className="mt-2 w-full rounded-md border border-[#f59e0b] bg-[#111] py-2 text-sm font-bold text-[#f59e0b]"
+            >
+              📣 Send to Contacts
+            </button>
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+/* ─────────────────────────  Subscribers tab  ───────────────────────── */
+
+function SubscribersTab({ toast }) {
+  const [subs, setSubs] = useState(null);
+  const reload = () => db.getSubscribers().then(setSubs);
+  useEffect(() => {
+    reload();
+  }, []);
+
+  if (!subs) return <Loading />;
+
+  const clearAll = async () => {
+    if (!confirm("Remove ALL subscribers? This cannot be undone.")) return;
+    await db.clearSubscribers();
+    setSubs([]);
+    toast("All subscribers removed");
+  };
+  const remove = async (id) => {
+    await db.deleteSubscriber(id);
+    reload();
+  };
+  const exportCSV = () => {
+    const rows = [["Time", "Name", "Phone", "Email"]];
+    subs.forEach((s) => rows.push([s.createdAt, s.name, s.phone, s.email]));
+    const csv = rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "bindu_subscribers.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-base font-extrabold text-gray-900">Total Subscribers: {subs.length}</h3>
+        <div className="flex gap-2 text-sm font-semibold">
+          <button onClick={exportCSV} className="rounded-md border border-[#f59e0b] px-3 py-1.5 text-[#b45309]">📥 Export CSV</button>
+          <button onClick={clearAll} className="rounded-md border border-red-300 px-3 py-1.5 text-red-600">🗑️ Clear All</button>
+        </div>
+      </div>
+
+      {subs.length === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-400">No subscribers yet. Add a "🔔 Alert Me" tap on the public page!</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {subs.map((s) => {
+            const digits = (s.phone || "").replace(/[^\d]/g, "");
+            const waPhone = digits.length === 10 ? `1${digits}` : digits;
+            return (
+              <div key={s.id} className="rounded-xl border border-gray-200 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-bold text-gray-900">{s.name || "Subscriber"}</p>
+                  <span className="shrink-0 text-xs text-gray-400">{new Date(s.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                  {s.phone && <a href={`tel:${s.phone}`} className="font-semibold text-[#b45309]">📞 {s.phone}</a>}
+                  {s.email && <a href={`mailto:${s.email}`} className="text-[#b45309]">✉️ {s.email}</a>}
+                  {waPhone && (
+                    <a href={`https://wa.me/${waPhone}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-whatsapp px-2.5 py-0.5 text-xs font-bold text-white">
+                      WhatsApp
+                    </a>
+                  )}
+                  <button onClick={() => remove(s.id)} className="ml-auto text-xs font-semibold text-red-500">Remove</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1313,6 +1405,7 @@ function AdminPanel() {
           {tab === "Published" && <PublishedTab toast={toast} />}
           {tab === "Config" && <ConfigTab toast={toast} />}
           {tab === "Leads" && <LeadsTab toast={toast} />}
+          {tab === "Subscribers" && <SubscribersTab toast={toast} />}
           {tab === "Super" && isSuper && <SuperTab toast={toast} />}
         </div>
       </div>

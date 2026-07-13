@@ -176,3 +176,15 @@ create policy "demo offers"      on offers      for all using (true) with check 
 create policy "demo templates"   on templates   for all using (true) with check (true);
 create policy "demo leads"       on leads       for all using (true) with check (true);
 create policy "demo admin_users" on admin_users for all using (true) with check (true);
+
+-- Subscribers (the "Alert Me" opt-in list) -------------------
+create table if not exists subscribers (
+  id         uuid primary key default gen_random_uuid(),
+  name       text default '',
+  phone      text default '',
+  email      text default '',
+  created_at timestamptz default now()
+);
+alter table subscribers enable row level security;
+drop policy if exists "demo subscribers" on subscribers;
+create policy "demo subscribers" on subscribers for all using (true) with check (true);

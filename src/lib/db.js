@@ -192,6 +192,24 @@ export async function clearLeads() {
   await supabase.from("leads").delete().neq("id", ZERO_UUID);
 }
 
+/* ───────────── SUBSCRIBERS (Alert Me) ───────────── */
+export async function getSubscribers() {
+  const { data, error } = await supabase
+    .from("subscribers").select("*").order("created_at", { ascending: false });
+  if (error || !data) return [];
+  return toCamelList(data);
+}
+export async function addSubscriber(sub) {
+  const { error } = await supabase.from("subscribers").insert(toSnake(sub));
+  if (error) console.warn("addSubscriber failed:", error.message);
+}
+export async function deleteSubscriber(id) {
+  await supabase.from("subscribers").delete().eq("id", id);
+}
+export async function clearSubscribers() {
+  await supabase.from("subscribers").delete().neq("id", ZERO_UUID);
+}
+
 /* ───────────── ADMIN USERS ───────────── */
 export async function getAdminUsers() {
   const { data } = await supabase.from("admin_users").select("*").order("created_at");
