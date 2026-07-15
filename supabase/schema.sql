@@ -139,8 +139,10 @@ where not exists (select 1 from offers);
 
 -- Extra columns added later (idempotent) -------------------
 alter table offers add column if not exists description  text default '';
+alter table offers add column if not exists image        text default '';
 alter table brand  add column if not exists header_color text default '';
 alter table brand  add column if not exists text_color   text default '';
+alter table brand  add column if not exists page_color   text default '';
 alter table config add column if not exists socials      jsonb default '[]';
 
 -- ============================================================

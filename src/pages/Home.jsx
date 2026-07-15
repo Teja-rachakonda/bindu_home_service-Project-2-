@@ -76,9 +76,12 @@ function Home() {
   const activeDeals = active?.deals ?? [];
   const socials = Array.isArray(config.socials) ? config.socials : [];
 
+  // Admin-configurable page background (falls back to the default light grey).
+  const pageStyle = brand.pageColor ? { backgroundColor: brand.pageColor } : undefined;
+
   return (
-    <div className="min-h-svh bg-page">
-      <div className="mx-auto flex min-h-svh w-full max-w-[420px] flex-col bg-page sm:shadow-xl sm:ring-1 sm:ring-black/5">
+    <div style={pageStyle} className="min-h-svh bg-page">
+      <div style={pageStyle} className="mx-auto flex min-h-svh w-full max-w-[420px] flex-col bg-page sm:shadow-xl sm:ring-1 sm:ring-black/5">
         <Header brand={brand} />
 
         <main className="flex-1 px-4 pb-40 pt-4">

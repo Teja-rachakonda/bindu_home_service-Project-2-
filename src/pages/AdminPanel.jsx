@@ -93,6 +93,7 @@ function BrandTab({ toast }) {
         phone: "+1 647-740-8124",
         headerColor: "",
         textColor: "",
+        pageColor: "",
         ...b,
       })
     );
@@ -165,6 +166,21 @@ function BrandTab({ toast }) {
           />
           <span className="text-sm text-gray-500">{form.textColor || "default white"}</span>
           <button type="button" onClick={() => setForm({ ...form, textColor: "" })} className="ml-auto text-sm text-gray-500 underline">Reset</button>
+        </div>
+      </div>
+
+      <SectionTitle>Page background</SectionTitle>
+      <div className="mb-4">
+        <Label>Background colour</Label>
+        <div className="flex items-center gap-3">
+          <input
+            type="color"
+            value={form.pageColor || "#f3f4f6"}
+            onChange={set("pageColor")}
+            className="h-10 w-16 rounded border border-gray-300"
+          />
+          <span className="text-sm text-gray-500">{form.pageColor || "default light grey"}</span>
+          <button type="button" onClick={() => setForm({ ...form, pageColor: "" })} className="ml-auto text-sm text-gray-500 underline">Reset</button>
         </div>
       </div>
 
@@ -404,6 +420,7 @@ const EMPTY_OFFER = {
   tag: "",
   badge: "",
   description: "",
+  image: "",
   active: true,
   sortOrder: 0,
 };
@@ -451,6 +468,13 @@ function OffersTab({ toast }) {
     reload();
   };
   const set = (k) => (e) => setEditing({ ...editing, [k]: e.target.value });
+  const handleUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setEditing({ ...editing, image: reader.result });
+    reader.readAsDataURL(file);
+  };
 
   if (showForm) {
     return (
@@ -472,6 +496,16 @@ function OffersTab({ toast }) {
         <Field label="Price" value={editing.price} onChange={set("price")} placeholder="$45/mo" />
         <Field label="Tag (small line)" value={editing.tag} onChange={set("tag")} placeholder="Best for 1-2 users" />
         <Field label="Badge" value={editing.badge} onChange={set("badge")} placeholder="Popular / Best Value / New" />
+
+        <Field label="Image URL" value={editing.image?.startsWith?.("data:") ? "" : (editing.image || "")} onChange={set("image")} placeholder="https://…" />
+        <label className="mb-4 mt-[-8px] flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-[#f59e0b] bg-[#fffbeb] py-3 text-sm font-semibold text-gray-700">
+          📤 Upload image
+          <input type="file" accept="image/*" onChange={handleUpload} className="hidden" />
+        </label>
+        {editing.image && (
+          <img src={editing.image} alt="preview" className="mb-4 max-h-40 w-full rounded-lg object-cover" />
+        )}
+
         <div className="mb-4">
           <Label>Description</Label>
           <textarea

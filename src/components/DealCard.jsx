@@ -62,7 +62,11 @@ function DealCard({ deal, categoryName, onRequestLead }) {
   }
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100 transition-shadow hover:shadow-md">
+    <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 transition-shadow hover:shadow-md">
+      {deal.image && (
+        <img src={deal.image} alt={deal.name} className="block max-h-48 w-full object-cover" />
+      )}
+      <div className="p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -108,6 +112,7 @@ function DealCard({ deal, categoryName, onRequestLead }) {
           <XCircle className="h-4 w-4" />
           Not now
         </button>
+      </div>
       </div>
     </div>
   );
